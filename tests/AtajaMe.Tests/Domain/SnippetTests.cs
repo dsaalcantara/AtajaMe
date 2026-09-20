@@ -21,6 +21,7 @@ public class SnippetTests
         Assert.False(snippet.IsInTrash);
         Assert.Null(snippet.DeletedAt);
         Assert.Equal(0, snippet.UsageCount);
+        Assert.True(snippet.CreatedAt <= DateTime.UtcNow);
     }
 
     [Theory]
@@ -32,6 +33,80 @@ public class SnippetTests
         // Assert
         Assert.Throws<ArgumentException>(() =>
             Snippet.Create(invalidCode!, "Nombre", "Contenido"));
+    }
+
+    [Fact]
+    public void Create_WithCodeExceedingMaxLength_ShouldThrowArgumentException()
+    {
+        var longCode = new string('a', Snippet.MaxCodeLength + 1);
+        Assert.Throws<ArgumentException>(() => Snippet.Create(longCode, "Largo", "Texto"));
+    }
+
+    [Fact]
+    public void Create_WithNullContent_ShouldThrowArgumentNullException()
+    {
+        Assert.Throws<ArgumentNullException>(() => Snippet.Create("c", "Nombre", null!));
+    }
+
+    [Fact]
+    public void Create_WithContentExceedingMaxLength_ShouldThrowArgumentException()
+    {
+        var longContent = new string('x', Snippet.MaxContentLength + 1);
+        Assert.Throws<ArgumentException>(() => Snippet.Create("c", "Nombre", longContent));
+    }
+
+    [Theory]
+    [InlineData(null)]
+    [InlineData("")]
+    [InlineData("   ")]
+    public void Create_WithNullOrWhitespaceName_ShouldFallbackToCode(string? name)
+    {
+        var snippet = Snippet.Create("code1", name!, "Contenido");
+        Assert.Equal("code1", snippet.Name);
+    }
+
+    [Fact]
+    public void Update_WithValidParameters_ShouldUpdatePropertiesAndTouchUpdatedAt()
+    {
+        // Arrange
+        var snippet = Snippet.Create("bd", "Original", "Contenido original");
+        var folderId = Guid.NewGuid();
+
+        // Act
+        snippet.Update("bd2", "Modificado", "Contenido nuevo", folderId, true);
+
+        // Assert
+        Assert.Equal("bd2", snippet.Code);
+        Assert.Equal("Modificado", snippet.Name);
+        Assert.Equal("Contenido nuevo", snippet.Content);
+        Assert.Equal(folderId, snippet.FolderId);
+        Assert.True(snippet.CaseSensitive);
+    }
+
+    [Fact]
+    public void ToggleActive_ShouldInvertActiveStatus()
+    {
+        var snippet = Snippet.Create("bd", "Buenos Días", "Hola");
+        Assert.True(snippet.IsActive);
+
+        snippet.ToggleActive();
+        Assert.False(snippet.IsActive);
+
+        snippet.ToggleActive();
+        Assert.True(snippet.IsActive);
+    }
+
+    [Fact]
+    public void ToggleFavorite_ShouldInvertFavoriteStatus()
+    {
+        var snippet = Snippet.Create("bd", "Buenos Días", "Hola");
+        Assert.False(snippet.IsFavorite);
+
+        snippet.ToggleFavorite();
+        Assert.True(snippet.IsFavorite);
+
+        snippet.ToggleFavorite();
+        Assert.False(snippet.IsFavorite);
     }
 
     [Fact]
@@ -109,5 +184,14 @@ public class SnippetTests
 
         // Assert
         Assert.Equal(expectedMatch, match);
+    }
+
+    [Theory]
+    [InlineData(null)]
+    [InlineData("")]
+    public void MatchesCode_WithNullOrEmptyInput_ShouldReturnFalse(string? inputCode)
+    {
+        var snippet = Snippet.Create("bd", "Prueba", "Contenido");
+        Assert.False(snippet.MatchesCode(inputCode!));
     }
 }

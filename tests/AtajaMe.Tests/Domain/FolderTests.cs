@@ -16,6 +16,7 @@ public class FolderTests
         Assert.Equal("Plantillas de Correo", folder.Name);
         Assert.Null(folder.ParentId);
         Assert.Equal(0, folder.SortOrder);
+        Assert.True(folder.CreatedAt <= DateTime.UtcNow);
     }
 
     [Theory]
@@ -38,6 +39,20 @@ public class FolderTests
     }
 
     [Fact]
+    public void MoveTo_WithValidParentId_ShouldUpdateParentIdAndTouchUpdatedAt()
+    {
+        // Arrange
+        var folder = Folder.Create("Carpeta Hija");
+        var parentId = Guid.NewGuid();
+
+        // Act
+        folder.MoveTo(parentId);
+
+        // Assert
+        Assert.Equal(parentId, folder.ParentId);
+    }
+
+    [Fact]
     public void UpdateName_ShouldChangeNameAndTouchUpdatedAt()
     {
         // Arrange
@@ -50,5 +65,23 @@ public class FolderTests
         // Assert
         Assert.Equal("Nuevo", folder.Name);
         Assert.True(folder.UpdatedAt >= originalUpdated);
+    }
+
+    [Theory]
+    [InlineData("")]
+    [InlineData("   ")]
+    public void UpdateName_WithInvalidName_ShouldThrowArgumentException(string newName)
+    {
+        var folder = Folder.Create("Original");
+        Assert.Throws<ArgumentException>(() => folder.UpdateName(newName));
+    }
+
+    [Fact]
+    public void SetSortOrder_ShouldUpdateSortOrderAndTouchUpdatedAt()
+    {
+        var folder = Folder.Create("Carpeta Ordenada", sortOrder: 1);
+        folder.SetSortOrder(5);
+
+        Assert.Equal(5, folder.SortOrder);
     }
 }

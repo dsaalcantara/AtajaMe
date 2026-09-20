@@ -26,6 +26,22 @@ public class DynamicVariableTests
     }
 
     [Fact]
+    public void ExtractVariables_WithUpperCaseTags_ShouldExtractSystemVariablesCaseInsensitive()
+    {
+        // Arrange
+        var content = "Hoy es {DATE} y {TIME} en {DATETIME}.";
+
+        // Act
+        var vars = DynamicVariable.ExtractVariables(content);
+
+        // Assert
+        Assert.Equal(3, vars.Count);
+        Assert.Equal(VariableType.SystemDate, vars[0].Type);
+        Assert.Equal(VariableType.SystemTime, vars[1].Type);
+        Assert.Equal(VariableType.SystemDateTime, vars[2].Type);
+    }
+
+    [Fact]
     public void ExtractVariables_WithInteractiveInput_ShouldParseNameAndDefaultValue()
     {
         // Arrange
@@ -58,6 +74,16 @@ public class DynamicVariableTests
         var vars = DynamicVariable.ExtractVariables(content);
 
         // Assert
+        Assert.Empty(vars);
+    }
+
+    [Theory]
+    [InlineData(null)]
+    [InlineData("")]
+    [InlineData("   ")]
+    public void ExtractVariables_WithNullOrWhitespace_ShouldReturnEmptyList(string? content)
+    {
+        var vars = DynamicVariable.ExtractVariables(content);
         Assert.Empty(vars);
     }
 }
