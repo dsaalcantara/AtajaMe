@@ -31,7 +31,7 @@ El desarrollo de AtajaMe sigue un riguroso enfoque de ingeniería por fases:
 1. [x] **Fase 1 · Contexto y Objetivo**: [`docs/00_CONTEXTO_Y_OBJETIVO.md`](docs/00_CONTEXTO_Y_OBJETIVO.md)
 2. [x] **Fase 2 · Decisiones Funcionales**: [`docs/01_DECISIONES_FUNCIONALES.md`](docs/01_DECISIONES_FUNCIONALES.md)
 3. [x] **Fase 3 · Especificación Funcional MVP**: [`docs/02_ESPECIFICACION_FUNCIONAL_MVP.md`](docs/02_ESPECIFICACION_FUNCIONAL_MVP.md)
-4. [ ] **Fase 4 · Arquitectura Técnica**: `docs/03_ARQUITECTURA_TECNICA.md` *(en curso)*
+4. [x] **Fase 4 · Arquitectura Técnica**: [`docs/03_ARQUITECTURA_TECNICA.md`](docs/03_ARQUITECTURA_TECNICA.md)
 5. [ ] **Fase 5 · Plan de Construcción**: `docs/04_PLAN_DE_CONSTRUCCION.md`
 6. [ ] **Fase 6 · Implementación y Pruebas**
 
