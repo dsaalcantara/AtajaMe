@@ -1,0 +1,64 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.0.31903.59
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{121954EB-4796-4F0F-8A08-3F091DBD55DC}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AtajaMe.Domain", "src\AtajaMe.Domain\AtajaMe.Domain.csproj", "{370ADD6A-A2E7-4BA0-B2E5-C1A5CECC132B}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AtajaMe.Application", "src\AtajaMe.Application\AtajaMe.Application.csproj", "{0AD22168-EA2D-4055-B57C-CE43AA58239E}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AtajaMe.Infrastructure", "src\AtajaMe.Infrastructure\AtajaMe.Infrastructure.csproj", "{C7B07A45-127D-4619-AFF4-9CD26AB42656}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AtajaMe.Windows", "src\AtajaMe.Windows\AtajaMe.Windows.csproj", "{41126CB2-E386-4591-919C-D6A191E57C8E}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{059C38E3-3A29-420B-96F6-C949AACF8DE8}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AtajaMe.Tests", "tests\AtajaMe.Tests\AtajaMe.Tests.csproj", "{3FC9A579-A52D-47A4-AE4B-216709DA6CE8}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AtajaMe.UI", "src\AtajaMe.UI\AtajaMe.UI.csproj", "{CED62274-3C57-410A-83F3-7576A24A1274}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{370ADD6A-A2E7-4BA0-B2E5-C1A5CECC132B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{370ADD6A-A2E7-4BA0-B2E5-C1A5CECC132B}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{370ADD6A-A2E7-4BA0-B2E5-C1A5CECC132B}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{370ADD6A-A2E7-4BA0-B2E5-C1A5CECC132B}.Release|Any CPU.Build.0 = Release|Any CPU
+		{0AD22168-EA2D-4055-B57C-CE43AA58239E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{0AD22168-EA2D-4055-B57C-CE43AA58239E}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{0AD22168-EA2D-4055-B57C-CE43AA58239E}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{0AD22168-EA2D-4055-B57C-CE43AA58239E}.Release|Any CPU.Build.0 = Release|Any CPU
+		{C7B07A45-127D-4619-AFF4-9CD26AB42656}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{C7B07A45-127D-4619-AFF4-9CD26AB42656}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{C7B07A45-127D-4619-AFF4-9CD26AB42656}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{C7B07A45-127D-4619-AFF4-9CD26AB42656}.Release|Any CPU.Build.0 = Release|Any CPU
+		{41126CB2-E386-4591-919C-D6A191E57C8E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{41126CB2-E386-4591-919C-D6A191E57C8E}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{41126CB2-E386-4591-919C-D6A191E57C8E}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{41126CB2-E386-4591-919C-D6A191E57C8E}.Release|Any CPU.Build.0 = Release|Any CPU
+		{3FC9A579-A52D-47A4-AE4B-216709DA6CE8}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{3FC9A579-A52D-47A4-AE4B-216709DA6CE8}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{3FC9A579-A52D-47A4-AE4B-216709DA6CE8}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{3FC9A579-A52D-47A4-AE4B-216709DA6CE8}.Release|Any CPU.Build.0 = Release|Any CPU
+		{CED62274-3C57-410A-83F3-7576A24A1274}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{CED62274-3C57-410A-83F3-7576A24A1274}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{CED62274-3C57-410A-83F3-7576A24A1274}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{CED62274-3C57-410A-83F3-7576A24A1274}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{370ADD6A-A2E7-4BA0-B2E5-C1A5CECC132B} = {121954EB-4796-4F0F-8A08-3F091DBD55DC}
+		{0AD22168-EA2D-4055-B57C-CE43AA58239E} = {121954EB-4796-4F0F-8A08-3F091DBD55DC}
+		{C7B07A45-127D-4619-AFF4-9CD26AB42656} = {121954EB-4796-4F0F-8A08-3F091DBD55DC}
+		{41126CB2-E386-4591-919C-D6A191E57C8E} = {121954EB-4796-4F0F-8A08-3F091DBD55DC}
+		{3FC9A579-A52D-47A4-AE4B-216709DA6CE8} = {059C38E3-3A29-420B-96F6-C949AACF8DE8}
+		{CED62274-3C57-410A-83F3-7576A24A1274} = {121954EB-4796-4F0F-8A08-3F091DBD55DC}
+	EndGlobalSection
+EndGlobal
