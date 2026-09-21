@@ -23,6 +23,7 @@
   <ItemGroup>
     <ProjectReference Include="..\..\src\AtajaMe.Domain\AtajaMe.Domain.csproj" />
     <ProjectReference Include="..\..\src\AtajaMe.Application\AtajaMe.Application.csproj" />
+    <ProjectReference Include="..\..\src\AtajaMe.Infrastructure\AtajaMe.Infrastructure.csproj" />
   </ItemGroup>
 
 </Project>
