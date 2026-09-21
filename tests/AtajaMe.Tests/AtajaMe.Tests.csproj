@@ -1,10 +1,10 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>net8.0</TargetFramework>
+    <TargetFramework>net8.0-windows</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
-
+    <UseWPF>true</UseWPF>
     <IsPackable>false</IsPackable>
     <IsTestProject>true</IsTestProject>
   </PropertyGroup>
@@ -24,6 +24,7 @@
     <ProjectReference Include="..\..\src\AtajaMe.Domain\AtajaMe.Domain.csproj" />
     <ProjectReference Include="..\..\src\AtajaMe.Application\AtajaMe.Application.csproj" />
     <ProjectReference Include="..\..\src\AtajaMe.Infrastructure\AtajaMe.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\src\AtajaMe.Windows\AtajaMe.Windows.csproj" />
   </ItemGroup>
 
 </Project>
