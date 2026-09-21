@@ -30,7 +30,7 @@ public abstract class SqliteTestBase : IAsyncLifetime, IDisposable
         return Task.CompletedTask;
     }
 
-    public void Dispose()
+    public virtual void Dispose()
     {
         _keepAliveConnection.Close();
         _keepAliveConnection.Dispose();
