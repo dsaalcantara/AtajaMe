@@ -85,10 +85,10 @@ public sealed class LowLevelKeyboardHook : IKeyboardHook
             {
                 var kbdStruct = Marshal.PtrToStructure<KBDLLHOOKSTRUCT>(lParam);
 
-                // Descartar inmediatamente eventos generados por nuestra propia inyección
-                if (kbdStruct.dwExtraInfo == Win32Constants.INJECTED_SIGNATURE)
+                // Descartar inmediatamente eventos generados por nuestra propia inyección o flags de inyección Win32
+                if (kbdStruct.dwExtraInfo == Win32Constants.INJECTED_SIGNATURE || (kbdStruct.flags & 0x10) != 0)
                 {
-                    return _win32.CallNextHookEx(_hookHandle, nCode, wParam, lParam);
+                    return CallNextSafe(nCode, wParam, lParam);
                 }
 
                 int msg = (int)wParam;
@@ -115,7 +115,19 @@ public sealed class LowLevelKeyboardHook : IKeyboardHook
             }
         }
 
-        return _win32.CallNextHookEx(_hookHandle, nCode, wParam, lParam);
+        return CallNextSafe(nCode, wParam, lParam);
+    }
+
+    private IntPtr CallNextSafe(int nCode, IntPtr wParam, IntPtr lParam)
+    {
+        try
+        {
+            return _win32.CallNextHookEx(_hookHandle, nCode, wParam, lParam);
+        }
+        catch
+        {
+            return IntPtr.Zero;
+        }
     }
 
     public void Dispose()

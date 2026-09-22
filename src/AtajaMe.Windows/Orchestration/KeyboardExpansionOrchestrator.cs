@@ -147,11 +147,6 @@ public sealed class KeyboardExpansionOrchestrator : IKeyboardExpansionOrchestrat
         }
 
         var activeWindow = _focusTracker.GetActiveWindowHandle();
-        if (!await IsExecutionTargetAllowedAsync(cancellationToken))
-        {
-            _engine.ResetBuffer();
-            return;
-        }
 
         var result = await _engine.ProcessKeyAsync(character.Value, cancellationToken);
         if (!result.IsMatch)
@@ -159,7 +154,8 @@ public sealed class KeyboardExpansionOrchestrator : IKeyboardExpansionOrchestrat
             return;
         }
 
-        if (_focusTracker.HasFocusChanged(activeWindow))
+        // Antes de expandir cualquier atajo, verificar que el foco no haya cambiado y que el objetivo sea seguro (RF-08)
+        if (_focusTracker.HasFocusChanged(activeWindow) || !await IsExecutionTargetAllowedAsync(cancellationToken))
         {
             _engine.ResetBuffer();
             return;

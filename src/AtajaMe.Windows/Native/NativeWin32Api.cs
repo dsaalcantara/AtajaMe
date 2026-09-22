@@ -91,43 +91,43 @@ public sealed class NativeWin32Api : IWin32Api
 
     #region P/Invoke Definitions
 
-    [DllImport("user32.dll", SetLastError = true, CharSet = CharSet.Auto)]
+    [DllImport("user32.dll", EntryPoint = "SetWindowsHookExW", SetLastError = true, CharSet = CharSet.Auto)]
     private static extern IntPtr SetWindowsHookExW(
         int idHook,
         HookProc lpfn,
         IntPtr hMod,
         uint dwThreadId);
 
-    [DllImport("user32.dll", SetLastError = true)]
+    [DllImport("user32.dll", EntryPoint = "UnhookWindowsHookEx", SetLastError = true)]
     [return: MarshalAs(UnmanagedType.Bool)]
     private static extern bool UnhookWindowsHookExNative(IntPtr hhk);
 
-    [DllImport("user32.dll")]
+    [DllImport("user32.dll", EntryPoint = "CallNextHookEx")]
     private static extern IntPtr CallNextHookExNative(
         IntPtr hhk,
         int nCode,
         IntPtr wParam,
         IntPtr lParam);
 
-    [DllImport("user32.dll", SetLastError = true)]
+    [DllImport("user32.dll", EntryPoint = "SendInput", SetLastError = true)]
     private static extern uint SendInputNative(
         uint nInputs,
         [MarshalAs(UnmanagedType.LPArray), In] INPUT[] pInputs,
         int cbSize);
 
-    [DllImport("user32.dll")]
+    [DllImport("user32.dll", EntryPoint = "GetForegroundWindow")]
     private static extern IntPtr GetForegroundWindowNative();
 
-    [DllImport("user32.dll", SetLastError = true)]
+    [DllImport("user32.dll", EntryPoint = "GetWindowThreadProcessId", SetLastError = true)]
     private static extern uint GetWindowThreadProcessIdNative(
         IntPtr hWnd,
         out uint lpdwProcessId);
 
-    [DllImport("user32.dll")]
+    [DllImport("user32.dll", EntryPoint = "GetKeyboardState")]
     [return: MarshalAs(UnmanagedType.Bool)]
     private static extern bool GetKeyboardStateNative([Out] byte[] lpKeyState);
 
-    [DllImport("user32.dll", CharSet = CharSet.Unicode)]
+    [DllImport("user32.dll", EntryPoint = "ToUnicodeEx", CharSet = CharSet.Unicode)]
     private static extern int ToUnicodeExNative(
         uint wVirtKey,
         uint wScanCode,
@@ -137,22 +137,22 @@ public sealed class NativeWin32Api : IWin32Api
         uint wFlags,
         IntPtr dwhkl);
 
-    [DllImport("user32.dll")]
+    [DllImport("user32.dll", EntryPoint = "GetKeyboardLayout")]
     private static extern IntPtr GetKeyboardLayoutNative(uint idThread);
 
-    [DllImport("user32.dll", SetLastError = true)]
+    [DllImport("user32.dll", EntryPoint = "GetGUIThreadInfo", SetLastError = true)]
     [return: MarshalAs(UnmanagedType.Bool)]
     private static extern bool GetGUIThreadInfoNative(uint idThread, ref GUITHREADINFO lpgui);
 
-    [DllImport("user32.dll")]
+    [DllImport("user32.dll", EntryPoint = "ClientToScreen")]
     [return: MarshalAs(UnmanagedType.Bool)]
     private static extern bool ClientToScreenNative(IntPtr hWnd, ref POINT lpPoint);
 
-    [DllImport("user32.dll")]
+    [DllImport("user32.dll", EntryPoint = "GetCursorPos")]
     [return: MarshalAs(UnmanagedType.Bool)]
     private static extern bool GetCursorPosNative(out POINT lpPoint);
 
-    [DllImport("kernel32.dll", CharSet = CharSet.Auto, SetLastError = true)]
+    [DllImport("kernel32.dll", EntryPoint = "GetModuleHandleW", CharSet = CharSet.Unicode, SetLastError = true)]
     private static extern IntPtr GetModuleHandle(string? lpModuleName);
 
     #endregion

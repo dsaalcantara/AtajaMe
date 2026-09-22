@@ -103,4 +103,21 @@ public sealed class WindowsTextInjectorTests
         Assert.False(result);
         Assert.Empty(_fakeWin32.SentInputs);
     }
+
+    [Fact]
+    public void InputStruct_In64BitProcess_HasCorrectSizeAndOffset()
+    {
+        int inputSize = System.Runtime.InteropServices.Marshal.SizeOf<INPUT>();
+        int offsetOfU = (int)System.Runtime.InteropServices.Marshal.OffsetOf<INPUT>("u");
+        if (IntPtr.Size == 8)
+        {
+            Assert.Equal(40, inputSize);
+            Assert.Equal(8, offsetOfU);
+        }
+        else
+        {
+            Assert.Equal(28, inputSize);
+            Assert.Equal(4, offsetOfU);
+        }
+    }
 }
