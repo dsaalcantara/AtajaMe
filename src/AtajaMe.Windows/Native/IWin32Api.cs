@@ -32,4 +32,10 @@ public interface IWin32Api
         IntPtr dwhkl);
 
     IntPtr GetKeyboardLayout(uint idThread);
+
+    bool GetGUIThreadInfo(uint idThread, ref GUITHREADINFO lpgui);
+
+    bool ClientToScreen(IntPtr hWnd, ref POINT lpPoint);
+
+    bool GetCursorPos(out POINT lpPoint);
 }

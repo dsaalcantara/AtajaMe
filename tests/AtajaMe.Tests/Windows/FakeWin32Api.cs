@@ -83,6 +83,38 @@ public sealed class FakeWin32Api : IWin32Api
         return IntPtr.Zero;
     }
 
+    public bool GuiThreadInfoSuccess { get; set; } = false;
+    public GUITHREADINFO GuiThreadInfoToReturn { get; set; }
+    public bool ClientToScreenSuccess { get; set; } = false;
+    public POINT ClientToScreenPointToReturn { get; set; }
+    public POINT CursorPosToReturn { get; set; } = new POINT(100, 100);
+
+    public bool GetGUIThreadInfo(uint idThread, ref GUITHREADINFO lpgui)
+    {
+        if (GuiThreadInfoSuccess)
+        {
+            lpgui = GuiThreadInfoToReturn;
+            return true;
+        }
+        return false;
+    }
+
+    public bool ClientToScreen(IntPtr hWnd, ref POINT lpPoint)
+    {
+        if (ClientToScreenSuccess)
+        {
+            lpPoint = ClientToScreenPointToReturn;
+            return true;
+        }
+        return false;
+    }
+
+    public bool GetCursorPos(out POINT lpPoint)
+    {
+        lpPoint = CursorPosToReturn;
+        return true;
+    }
+
     /// <summary>
     /// Simula un evento de hook invocando el delegado registrado con una estructura KBDLLHOOKSTRUCT.
     /// </summary>

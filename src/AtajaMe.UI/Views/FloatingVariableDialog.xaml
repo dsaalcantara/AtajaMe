@@ -1,0 +1,95 @@
+<Window x:Class="AtajaMe.UI.Views.FloatingVariableDialog"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:vm="clr-namespace:AtajaMe.UI.ViewModels"
+        mc:Ignorable="d"
+        Title="AtajaMe · Variables"
+        WindowStyle="None"
+        AllowsTransparency="True"
+        Topmost="True"
+        ShowInTaskbar="False"
+        Background="Transparent"
+        SizeToContent="WidthAndHeight"
+        MinWidth="320"
+        MaxWidth="480"
+        WindowStartupLocation="Manual"
+        KeyDown="OnWindowKeyDown">
+
+    <Window.Effect>
+        <DropShadowEffect BlurRadius="16" ShadowDepth="4" Direction="270" Color="#000000" Opacity="0.35" />
+    </Window.Effect>
+
+    <Border Background="{DynamicResource BgCardBrush}"
+            BorderBrush="{DynamicResource AccentBrush}"
+            BorderThickness="1.5"
+            CornerRadius="10"
+            Margin="8"
+            Padding="16">
+        <StackPanel>
+            <!-- Cabecera -->
+            <DockPanel Margin="0,0,0,12">
+                <Border Style="{StaticResource CodeBadgeStyle}"
+                        VerticalAlignment="Center"
+                        DockPanel.Dock="Right">
+                    <TextBlock Text="{Binding SnippetCode}"
+                               FontFamily="Cascadia Code, Consolas, Courier New"
+                               FontWeight="Bold"
+                               Foreground="{DynamicResource AccentBrush}" />
+                </Border>
+                <StackPanel VerticalAlignment="Center">
+                    <TextBlock Text="Completar variables"
+                               FontWeight="Bold"
+                               FontSize="14"
+                               Foreground="{DynamicResource TextPrimaryBrush}" />
+                    <TextBlock Text="{Binding SnippetName}"
+                               FontSize="11"
+                               Foreground="{DynamicResource TextSecondaryBrush}"
+                               TextTrimming="CharacterEllipsis" />
+                </StackPanel>
+            </DockPanel>
+
+            <Separator Background="{DynamicResource BorderSubtleBrush}" Margin="0,0,0,12" />
+
+            <!-- Lista de Campos Dinámicos -->
+            <ItemsControl x:Name="FieldsItemsControl"
+                          ItemsSource="{Binding Fields}">
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate>
+                        <StackPanel Margin="0,0,0,10">
+                            <TextBlock Text="{Binding DisplayLabel}"
+                                       FontSize="12"
+                                       FontWeight="SemiBold"
+                                       Foreground="{DynamicResource TextSecondaryBrush}"
+                                       Margin="0,0,0,4" />
+                            <TextBox Text="{Binding Value, UpdateSourceTrigger=PropertyChanged}"
+                                     Loaded="OnFieldTextBoxLoaded" />
+                        </StackPanel>
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
+
+            <!-- Acciones Rápidas -->
+            <DockPanel Margin="0,6,0,0">
+                <TextBlock Text="↵ Enter para insertar · Esc para cancelar"
+                           FontSize="11"
+                           Foreground="{DynamicResource TextMutedBrush}"
+                           VerticalAlignment="Center" />
+                <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                    <Button Content="Cancelar"
+                            Style="{StaticResource SecondaryButtonStyle}"
+                            Command="{Binding CancelCommand}"
+                            Margin="0,0,8,0"
+                            Padding="10,4"
+                            FontSize="12" />
+                    <Button Content="Insertar"
+                            Style="{StaticResource AccentButtonStyle}"
+                            Command="{Binding ConfirmCommand}"
+                            Padding="12,4"
+                            FontSize="12" />
+                </StackPanel>
+            </DockPanel>
+        </StackPanel>
+    </Border>
+</Window>

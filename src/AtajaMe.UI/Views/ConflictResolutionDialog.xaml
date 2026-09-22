@@ -1,0 +1,162 @@
+<Window x:Class="AtajaMe.UI.Views.ConflictResolutionDialog"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:vm="clr-namespace:AtajaMe.UI.ViewModels"
+        mc:Ignorable="d"
+        Title="AtajaMe · Resolución de Conflictos de Sincronización"
+        Height="540" Width="820"
+        MinHeight="450" MinWidth="680"
+        WindowStartupLocation="CenterOwner"
+        Background="{DynamicResource BgPrimaryBrush}">
+
+    <Grid Margin="16">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+
+        <!-- Cabecera -->
+        <StackPanel Grid.Row="0" Margin="0,0,0,12">
+            <TextBlock Text="⚠️ Discrepancia detectada en la sincronización (RF-24)"
+                       FontWeight="Bold"
+                       FontSize="16"
+                       Foreground="{DynamicResource WarningBrush}" />
+            <TextBlock Text="El mismo atajo ha sido modificado en este equipo y en la carpeta compartida desde la última sincronización. Selecciona qué versión deseas conservar."
+                       FontSize="12"
+                       Foreground="{DynamicResource TextSecondaryBrush}"
+                       TextWrapping="Wrap"
+                       Margin="0,4,0,0" />
+        </StackPanel>
+
+        <!-- Selector de conflicto si hay más de 1 -->
+        <ComboBox Grid.Row="1"
+                  ItemsSource="{Binding Conflicts}"
+                  SelectedItem="{Binding SelectedConflict}"
+                  Margin="0,0,0,12">
+            <ComboBox.ItemTemplate>
+                <DataTemplate DataType="{x:Type vm:ConflictItemViewModel}">
+                    <StackPanel Orientation="Horizontal">
+                        <Border Style="{StaticResource CodeBadgeStyle}" Margin="0,0,8,0">
+                            <TextBlock Text="{Binding Code}" FontWeight="Bold" Foreground="{DynamicResource AccentBrush}" />
+                        </Border>
+                        <TextBlock Text="{Binding ConflictTypeDescription, StringFormat='[{0}] '}" FontWeight="SemiBold" />
+                        <TextBlock Text="{Binding LocalName}" />
+                    </StackPanel>
+                </DataTemplate>
+            </ComboBox.ItemTemplate>
+        </ComboBox>
+
+        <!-- Vista Comparativa Lado a Lado -->
+        <Grid Grid.Row="2" Margin="0,0,0,16">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="12" />
+                <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
+
+            <!-- Tarjeta Versión Local -->
+            <Border Grid.Column="0"
+                    Background="{DynamicResource BgCardBrush}"
+                    BorderBrush="{DynamicResource BorderBrush}"
+                    BorderThickness="1"
+                    CornerRadius="8"
+                    Padding="14">
+                <DockPanel>
+                    <StackPanel DockPanel.Dock="Top" Margin="0,0,0,10">
+                        <TextBlock Text="💻 Versión Local (Este equipo)"
+                                   FontWeight="Bold"
+                                   FontSize="14"
+                                   Foreground="{DynamicResource AccentBrush}" />
+                        <TextBlock Text="{Binding SelectedConflict.LocalUpdatedAt, StringFormat='Modificado: {0:dd/MM/yyyy HH:mm:ss} UTC'}"
+                                   FontSize="11"
+                                   Foreground="{DynamicResource TextMutedBrush}"
+                                   Margin="0,2,0,0" />
+                        <TextBlock Text="{Binding SelectedConflict.LocalName, StringFormat='Nombre: {0}'}"
+                                   FontWeight="SemiBold"
+                                   FontSize="12"
+                                   Margin="0,6,0,0" />
+                    </StackPanel>
+
+                    <TextBlock Text="Contenido:" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource TextSecondaryBrush}" DockPanel.Dock="Top" Margin="0,0,0,4" />
+
+                    <TextBox Text="{Binding SelectedConflict.LocalContent, Mode=OneWay}"
+                             IsReadOnly="True"
+                             TextWrapping="Wrap"
+                             VerticalScrollBarVisibility="Auto"
+                             FontFamily="Cascadia Code, Consolas, Courier New"
+                             FontSize="12"
+                             Background="{DynamicResource BgInputBrush}" />
+                </DockPanel>
+            </Border>
+
+            <!-- Separador visual -->
+            <GridSplitter Grid.Column="1" HorizontalAlignment="Stretch" Background="Transparent" />
+
+            <!-- Tarjeta Versión Remota -->
+            <Border Grid.Column="2"
+                    Background="{DynamicResource BgCardBrush}"
+                    BorderBrush="{DynamicResource BorderBrush}"
+                    BorderThickness="1"
+                    CornerRadius="8"
+                    Padding="14">
+                <DockPanel>
+                    <StackPanel DockPanel.Dock="Top" Margin="0,0,0,10">
+                        <TextBlock Text="☁️ Versión Remota (Carpeta compartida)"
+                                   FontWeight="Bold"
+                                   FontSize="14"
+                                   Foreground="{DynamicResource SuccessBrush}" />
+                        <TextBlock Text="{Binding SelectedConflict.RemoteUpdatedAt, StringFormat='Modificado: {0:dd/MM/yyyy HH:mm:ss} UTC'}"
+                                   FontSize="11"
+                                   Foreground="{DynamicResource TextMutedBrush}"
+                                   Margin="0,2,0,0" />
+                        <TextBlock Text="{Binding SelectedConflict.RemoteName, StringFormat='Nombre: {0}'}"
+                                   FontWeight="SemiBold"
+                                   FontSize="12"
+                                   Margin="0,6,0,0" />
+                    </StackPanel>
+
+                    <TextBlock Text="Contenido:" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource TextSecondaryBrush}" DockPanel.Dock="Top" Margin="0,0,0,4" />
+
+                    <TextBox Text="{Binding SelectedConflict.RemoteContent, Mode=OneWay}"
+                             IsReadOnly="True"
+                             TextWrapping="Wrap"
+                             VerticalScrollBarVisibility="Auto"
+                             FontFamily="Cascadia Code, Consolas, Courier New"
+                             FontSize="12"
+                             Background="{DynamicResource BgInputBrush}" />
+                </DockPanel>
+            </Border>
+        </Grid>
+
+        <!-- Pie con botones de resolución (RF-24) -->
+        <DockPanel Grid.Row="3">
+            <TextBlock Text="{Binding StatusMessage}"
+                       FontSize="11"
+                       Foreground="{DynamicResource TextSecondaryBrush}"
+                       VerticalAlignment="Center" />
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                <Button Content="Conservar Versión Local"
+                        Command="{Binding KeepLocalCommand}"
+                        Style="{StaticResource SecondaryButtonStyle}"
+                        Margin="0,0,8,0"
+                        Padding="12,6"
+                        ToolTip="Mantiene los datos locales y sobrescribe los remotos" />
+                <Button Content="Conservar Versión Remota"
+                        Command="{Binding KeepRemoteCommand}"
+                        Style="{StaticResource SecondaryButtonStyle}"
+                        Margin="0,0,8,0"
+                        Padding="12,6"
+                        ToolTip="Actualiza la base local con el contenido remoto" />
+                <Button Content="Conservar Ambas (Duplicar)"
+                        Command="{Binding DuplicateBothCommand}"
+                        Style="{StaticResource AccentButtonStyle}"
+                        Padding="14,6"
+                        ToolTip="Mantiene el local y guarda el remoto con un código único diferenciado" />
+            </StackPanel>
+        </DockPanel>
+    </Grid>
+</Window>

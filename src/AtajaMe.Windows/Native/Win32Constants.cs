@@ -108,3 +108,39 @@ public struct HARDWAREINPUT
 }
 
 public delegate IntPtr HookProc(int nCode, IntPtr wParam, IntPtr lParam);
+
+[StructLayout(LayoutKind.Sequential)]
+public struct POINT
+{
+    public int X;
+    public int Y;
+
+    public POINT(int x, int y)
+    {
+        X = x;
+        Y = y;
+    }
+}
+
+[StructLayout(LayoutKind.Sequential)]
+public struct RECT
+{
+    public int Left;
+    public int Top;
+    public int Right;
+    public int Bottom;
+}
+
+[StructLayout(LayoutKind.Sequential)]
+public struct GUITHREADINFO
+{
+    public int cbSize;
+    public int flags;
+    public IntPtr hwndActive;
+    public IntPtr hwndFocus;
+    public IntPtr hwndCapture;
+    public IntPtr hwndMenuOwner;
+    public IntPtr hwndMoveSize;
+    public IntPtr hwndCaret;
+    public RECT rcCaret;
+}

@@ -1,0 +1,87 @@
+using AtajaMe.Domain.Repositories;
+
+namespace AtajaMe.Application.Settings;
+
+public sealed record AppSettingsDto(
+    string Theme,
+    string? SyncFolderPath,
+    bool SyncEnabled,
+    bool StartWithWindows,
+    bool StartMinimized,
+    int BackupRetentionCount,
+    int RecentSnippetsLimit,
+    int TrashRetentionDays)
+{
+    public static AppSettingsDto Default => new(
+        Theme: "System",
+        SyncFolderPath: null,
+        SyncEnabled: false,
+        StartWithWindows: false,
+        StartMinimized: false,
+        BackupRetentionCount: 10,
+        RecentSnippetsLimit: 10,
+        TrashRetentionDays: 30);
+}
+
+public sealed class AppSettingsService
+{
+    public const string KeyTheme = "AppTheme";
+    public const string KeySyncFolderPath = "SyncFolderPath";
+    public const string KeySyncEnabled = "SyncEnabled";
+    public const string KeyStartWithWindows = "StartWithWindows";
+    public const string KeyStartMinimized = "StartMinimized";
+    public const string KeyBackupRetention = "BackupRetentionCount";
+    public const string KeyRecentLimit = "RecentSnippetsLimit";
+    public const string KeyTrashRetention = "TrashRetentionDays";
+
+    private readonly IAppSettingsRepository _repository;
+
+    public AppSettingsService(IAppSettingsRepository repository)
+    {
+        _repository = repository;
+    }
+
+    public async Task<AppSettingsDto> GetSettingsAsync(CancellationToken cancellationToken = default)
+    {
+        var dict = await _repository.GetAllAsync(cancellationToken);
+
+        var theme = dict.TryGetValue(KeyTheme, out var t) ? t : "System";
+        dict.TryGetValue(KeySyncFolderPath, out var syncFolder);
+        var syncEnabled = dict.TryGetValue(KeySyncEnabled, out var se) && bool.TryParse(se, out var seb) && seb;
+        var startWindows = dict.TryGetValue(KeyStartWithWindows, out var sw) && bool.TryParse(sw, out var swb) && swb;
+        var startMin = dict.TryGetValue(KeyStartMinimized, out var sm) && bool.TryParse(sm, out var smb) && smb;
+        var backupRetention = dict.TryGetValue(KeyBackupRetention, out var br) && int.TryParse(br, out var bri) ? bri : 10;
+        var recentLimit = dict.TryGetValue(KeyRecentLimit, out var rl) && int.TryParse(rl, out var rli) ? rli : 10;
+        var trashRetention = dict.TryGetValue(KeyTrashRetention, out var tr) && int.TryParse(tr, out var tri) ? tri : 30;
+
+        return new AppSettingsDto(
+            theme,
+            syncFolder,
+            syncEnabled,
+            startWindows,
+            startMin,
+            backupRetention,
+            recentLimit,
+            trashRetention);
+    }
+
+    public async Task SaveSettingsAsync(AppSettingsDto settings, CancellationToken cancellationToken = default)
+    {
+        await _repository.SetValueAsync(KeyTheme, settings.Theme, cancellationToken);
+        if (settings.SyncFolderPath != null)
+        {
+            await _repository.SetValueAsync(KeySyncFolderPath, settings.SyncFolderPath, cancellationToken);
+        }
+        else
+        {
+            await _repository.DeleteKeyAsync(KeySyncFolderPath, cancellationToken);
+        }
+
+        await _repository.SetValueAsync(KeySyncEnabled, settings.SyncEnabled.ToString(), cancellationToken);
+        await _repository.SetValueAsync(KeyStartWithWindows, settings.StartWithWindows.ToString(), cancellationToken);
+        await _repository.SetValueAsync(KeyStartMinimized, settings.StartMinimized.ToString(), cancellationToken);
+        await _repository.SetValueAsync(KeyBackupRetention, settings.BackupRetentionCount.ToString(), cancellationToken);
+        await _repository.SetValueAsync(KeyRecentLimit, settings.RecentSnippetsLimit.ToString(), cancellationToken);
+        await _repository.SetValueAsync(KeyTrashRetention, settings.TrashRetentionDays.ToString(), cancellationToken);
+    }
+}

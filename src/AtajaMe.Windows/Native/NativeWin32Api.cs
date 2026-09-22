@@ -74,6 +74,21 @@ public sealed class NativeWin32Api : IWin32Api
         return GetKeyboardLayoutNative(idThread);
     }
 
+    public bool GetGUIThreadInfo(uint idThread, ref GUITHREADINFO lpgui)
+    {
+        return GetGUIThreadInfoNative(idThread, ref lpgui);
+    }
+
+    public bool ClientToScreen(IntPtr hWnd, ref POINT lpPoint)
+    {
+        return ClientToScreenNative(hWnd, ref lpPoint);
+    }
+
+    public bool GetCursorPos(out POINT lpPoint)
+    {
+        return GetCursorPosNative(out lpPoint);
+    }
+
     #region P/Invoke Definitions
 
     [DllImport("user32.dll", SetLastError = true, CharSet = CharSet.Auto)]
@@ -124,6 +139,18 @@ public sealed class NativeWin32Api : IWin32Api
 
     [DllImport("user32.dll")]
     private static extern IntPtr GetKeyboardLayoutNative(uint idThread);
+
+    [DllImport("user32.dll", SetLastError = true)]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    private static extern bool GetGUIThreadInfoNative(uint idThread, ref GUITHREADINFO lpgui);
+
+    [DllImport("user32.dll")]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    private static extern bool ClientToScreenNative(IntPtr hWnd, ref POINT lpPoint);
+
+    [DllImport("user32.dll")]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    private static extern bool GetCursorPosNative(out POINT lpPoint);
 
     [DllImport("kernel32.dll", CharSet = CharSet.Auto, SetLastError = true)]
     private static extern IntPtr GetModuleHandle(string? lpModuleName);

@@ -25,6 +25,7 @@
     <ProjectReference Include="..\..\src\AtajaMe.Application\AtajaMe.Application.csproj" />
     <ProjectReference Include="..\..\src\AtajaMe.Infrastructure\AtajaMe.Infrastructure.csproj" />
     <ProjectReference Include="..\..\src\AtajaMe.Windows\AtajaMe.Windows.csproj" />
+    <ProjectReference Include="..\..\src\AtajaMe.UI\AtajaMe.UI.csproj" />
   </ItemGroup>
 
 </Project>

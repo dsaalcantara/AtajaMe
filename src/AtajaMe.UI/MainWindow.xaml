@@ -1,12 +1,663 @@
-﻿<Window x:Class="AtajaMe.UI.MainWindow"
+<Window x:Class="AtajaMe.UI.MainWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-        xmlns:local="clr-namespace:AtajaMe.UI"
+        xmlns:vm="clr-namespace:AtajaMe.UI.ViewModels"
         mc:Ignorable="d"
-        Title="MainWindow" Height="450" Width="800">
-    <Grid>
+        Title="AtajaMe · Gestor de Atajos de Teclado"
+        Height="700" Width="1100"
+        MinHeight="550" MinWidth="850"
+        WindowStartupLocation="CenterScreen"
+        Background="{DynamicResource BgPrimaryBrush}">
 
+    <Window.InputBindings>
+        <KeyBinding Modifiers="Control" Key="N" Command="{Binding NewSnippetCommand}" />
+        <KeyBinding Modifiers="Control" Key="S" Command="{Binding Editor.SaveCommand}" />
+        <KeyBinding Key="F5" Command="{Binding RefreshCommand}" />
+        <KeyBinding Key="Delete" Command="{Binding DeleteSnippetCommand}" />
+    </Window.InputBindings>
+
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+
+        <Grid Grid.Row="0">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="240" MinWidth="180" MaxWidth="320" />
+                <ColumnDefinition Width="380" MinWidth="280" />
+                <ColumnDefinition Width="2" />
+                <ColumnDefinition Width="*" MinWidth="340" />
+            </Grid.ColumnDefinitions>
+
+            <!-- ============================================== -->
+            <!-- PANEL LATERAL IZQUIERDO (NAVEGACIÓN Y CARPETAS) -->
+            <!-- ============================================== -->
+            <Border Grid.Column="0"
+                    Background="{DynamicResource BgSidebarBrush}"
+                    BorderBrush="{DynamicResource BorderBrush}"
+                    BorderThickness="0,0,1,0">
+                <DockPanel Margin="12,16,12,12">
+                    <!-- Logotipo y Estado Superior -->
+                    <StackPanel DockPanel.Dock="Top" Margin="0,0,0,16">
+                        <DockPanel>
+                            <TextBlock Text="⚡ AtajaMe"
+                                       FontWeight="Bold"
+                                       FontSize="17"
+                                       Foreground="{DynamicResource AccentBrush}"
+                                       VerticalAlignment="Center" />
+                            <Border HorizontalAlignment="Right"
+                                    CornerRadius="10"
+                                    Padding="8,2"
+                                    VerticalAlignment="Center">
+                                <Border.Style>
+                                    <Style TargetType="Border">
+                                        <Setter Property="Background" Value="{DynamicResource SuccessBrush}" />
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding IsOrchestratorPaused}" Value="True">
+                                                <Setter Property="Background" Value="{DynamicResource WarningBrush}" />
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </Border.Style>
+                                <TextBlock FontSize="10"
+                                           FontWeight="SemiBold"
+                                           Foreground="White">
+                                    <TextBlock.Style>
+                                        <Style TargetType="TextBlock">
+                                            <Setter Property="Text" Value="ACTIVO" />
+                                            <Style.Triggers>
+                                                <DataTrigger Binding="{Binding IsOrchestratorPaused}" Value="True">
+                                                    <Setter Property="Text" Value="EN PAUSA" />
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </TextBlock.Style>
+                                </TextBlock>
+                            </Border>
+                        </DockPanel>
+                        <TextBlock Text="Atajos de texto instantáneos"
+                                   FontSize="11"
+                                   Foreground="{DynamicResource TextMutedBrush}"
+                                   Margin="0,2,0,0" />
+                    </StackPanel>
+
+                    <!-- Botón Configuración al pie del sidebar -->
+                    <Button DockPanel.Dock="Bottom"
+                            Content="⚙ Configuración..."
+                            Style="{StaticResource SecondaryButtonStyle}"
+                            HorizontalAlignment="Stretch"
+                            Click="OnSettingsButtonClick"
+                            Margin="0,12,0,0" />
+
+                    <!-- Menú de Biblioteca -->
+                    <ScrollViewer VerticalScrollBarVisibility="Auto">
+                        <StackPanel>
+                            <TextBlock Text="BIBLIOTECA"
+                                       FontSize="11"
+                                       FontWeight="Bold"
+                                       Foreground="{DynamicResource TextMutedBrush}"
+                                       Margin="4,0,0,6" />
+
+                            <!-- Todos -->
+                            <Button Style="{StaticResource SecondaryButtonStyle}"
+                                    Command="{Binding SelectAllCommand}"
+                                    HorizontalContentAlignment="Stretch"
+                                    BorderThickness="0"
+                                    Margin="0,1">
+                                <DockPanel>
+                                    <TextBlock Text="📋 Todos los atajos" VerticalAlignment="Center" />
+                                    <TextBlock Text="{Binding AllCount}"
+                                               HorizontalAlignment="Right"
+                                               Foreground="{DynamicResource TextSecondaryBrush}"
+                                               FontSize="11" />
+                                </DockPanel>
+                            </Button>
+
+                            <!-- Favoritos -->
+                            <Button Style="{StaticResource SecondaryButtonStyle}"
+                                    Command="{Binding SelectFavoritesCommand}"
+                                    HorizontalContentAlignment="Stretch"
+                                    BorderThickness="0"
+                                    Margin="0,1">
+                                <DockPanel>
+                                    <TextBlock Text="⭐ Favoritos" VerticalAlignment="Center" />
+                                    <TextBlock Text="{Binding FavoritesCount}"
+                                               HorizontalAlignment="Right"
+                                               Foreground="{DynamicResource TextSecondaryBrush}"
+                                               FontSize="11" />
+                                </DockPanel>
+                            </Button>
+
+                            <!-- Recientes -->
+                            <Button Style="{StaticResource SecondaryButtonStyle}"
+                                    Command="{Binding SelectRecentCommand}"
+                                    HorizontalContentAlignment="Stretch"
+                                    BorderThickness="0"
+                                    Margin="0,1">
+                                <DockPanel>
+                                    <TextBlock Text="🕒 Recientes" VerticalAlignment="Center" />
+                                    <TextBlock Text="{Binding RecentCount}"
+                                               HorizontalAlignment="Right"
+                                               Foreground="{DynamicResource TextSecondaryBrush}"
+                                               FontSize="11" />
+                                </DockPanel>
+                            </Button>
+
+                            <!-- Papelera -->
+                            <Button Style="{StaticResource SecondaryButtonStyle}"
+                                    Command="{Binding SelectTrashCommand}"
+                                    HorizontalContentAlignment="Stretch"
+                                    BorderThickness="0"
+                                    Margin="0,1">
+                                <DockPanel>
+                                    <TextBlock Text="🗑 Papelera" VerticalAlignment="Center" />
+                                    <TextBlock Text="{Binding TrashCount}"
+                                               HorizontalAlignment="Right"
+                                               Foreground="{DynamicResource TextSecondaryBrush}"
+                                               FontSize="11" />
+                                </DockPanel>
+                            </Button>
+
+                            <Separator Background="{DynamicResource BorderBrush}" Margin="0,12" />
+
+                            <!-- Sección Carpetas -->
+                            <DockPanel Margin="4,0,0,6">
+                                <Button Content="+"
+                                        Command="{Binding NewFolderCommand}"
+                                        Style="{StaticResource SecondaryButtonStyle}"
+                                        DockPanel.Dock="Right"
+                                        Padding="6,1"
+                                        ToolTip="Nueva carpeta raíz" />
+                                <TextBlock Text="CARPETAS"
+                                           FontSize="11"
+                                           FontWeight="Bold"
+                                           Foreground="{DynamicResource TextMutedBrush}"
+                                           VerticalAlignment="Center" />
+                            </DockPanel>
+
+                            <!-- Árbol de Carpetas -->
+                            <TreeView ItemsSource="{Binding FolderTree}"
+                                      Background="Transparent"
+                                      BorderThickness="0"
+                                      SelectedItemChanged="OnFolderTreeSelectedItemChanged">
+                                <TreeView.ItemTemplate>
+                                    <HierarchicalDataTemplate DataType="{x:Type vm:FolderTreeItemViewModel}"
+                                                              ItemsSource="{Binding Children}">
+                                        <DockPanel Margin="2,3">
+                                            <TextBlock Text="📁 " FontSize="12" VerticalAlignment="Center" />
+                                            <TextBlock Text="{Binding Name}"
+                                                       Foreground="{DynamicResource TextPrimaryBrush}"
+                                                       VerticalAlignment="Center"
+                                                       Margin="4,0,8,0" />
+                                            <TextBlock Text="{Binding SnippetCount, StringFormat='({0})'}"
+                                                       FontSize="11"
+                                                       Foreground="{DynamicResource TextMutedBrush}"
+                                                       VerticalAlignment="Center" />
+                                        </DockPanel>
+                                    </HierarchicalDataTemplate>
+                                </TreeView.ItemTemplate>
+                            </TreeView>
+                        </StackPanel>
+                    </ScrollViewer>
+                </DockPanel>
+            </Border>
+
+            <!-- ============================================== -->
+            <!-- PANEL CENTRAL (LISTA DE ATAJOS Y BÚSQUEDA)      -->
+            <!-- ============================================== -->
+            <Grid Grid.Column="1" Background="{DynamicResource BgSecondaryBrush}">
+                <DockPanel Margin="12,16,12,12">
+                    <!-- Cabecera Superior: Título y Nuevo Atajo -->
+                    <DockPanel DockPanel.Dock="Top" Margin="0,0,0,10">
+                        <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
+                            <!-- Botón Vaciar Papelera si está en papelera -->
+                            <Button Content="Vaciar Papelera"
+                                    Command="{Binding PurgeTrashCommand}"
+                                    Margin="0,0,6,0">
+                                <Button.Style>
+                                    <Style TargetType="Button" BasedOn="{StaticResource DangerButtonStyle}">
+                                        <Setter Property="Visibility" Value="Collapsed" />
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding IsTrashSelected}" Value="True">
+                                                <Setter Property="Visibility" Value="Visible" />
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </Button.Style>
+                            </Button>
+
+                            <Button Content="+ Nuevo Atajo"
+                                    Command="{Binding NewSnippetCommand}"
+                                    Style="{StaticResource AccentButtonStyle}"
+                                    ToolTip="Crear un nuevo atajo (Ctrl+N)" />
+                        </StackPanel>
+                        <TextBlock Text="{Binding CurrentSectionTitle}"
+                                   FontWeight="Bold"
+                                   FontSize="16"
+                                   VerticalAlignment="Center"
+                                   TextTrimming="CharacterEllipsis" />
+                    </DockPanel>
+
+                    <!-- Buscador en tiempo real (RF-15) -->
+                    <Border DockPanel.Dock="Top" Margin="0,0,0,10">
+                        <TextBox Text="{Binding SearchQuery, UpdateSourceTrigger=PropertyChanged}"
+                                 Tag="Buscar por código, nombre o contenido...">
+                            <!-- Placeholder visual -->
+                        </TextBox>
+                    </Border>
+
+                    <!-- Lista de Atajos -->
+                    <ListBox ItemsSource="{Binding DisplayedSnippets}"
+                             SelectedItem="{Binding SelectedSnippet}"
+                             Background="Transparent"
+                             BorderThickness="0"
+                             ScrollViewer.HorizontalScrollBarVisibility="Disabled">
+                        <ListBox.ItemContainerStyle>
+                            <Style TargetType="ListBoxItem">
+                                <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+                                <Setter Property="Padding" Value="0" />
+                                <Setter Property="Margin" Value="0,0,0,4" />
+                                <Setter Property="Template">
+                                    <Setter.Value>
+                                        <ControlTemplate TargetType="ListBoxItem">
+                                            <Border x:Name="border"
+                                                    Background="{DynamicResource BgCardBrush}"
+                                                    BorderBrush="{DynamicResource BorderBrush}"
+                                                    BorderThickness="1"
+                                                    CornerRadius="6"
+                                                    Padding="10,8">
+                                                <ContentPresenter />
+                                            </Border>
+                                            <ControlTemplate.Triggers>
+                                                <Trigger Property="IsSelected" Value="True">
+                                                    <Setter TargetName="border" Property="BorderBrush" Value="{DynamicResource AccentBrush}" />
+                                                    <Setter TargetName="border" Property="Background" Value="{DynamicResource BgSelectedBrush}" />
+                                                </Trigger>
+                                                <Trigger Property="IsMouseOver" Value="True">
+                                                    <Setter TargetName="border" Property="BorderBrush" Value="{DynamicResource AccentBrush}" />
+                                                </Trigger>
+                                            </ControlTemplate.Triggers>
+                                        </ControlTemplate>
+                                    </Setter.Value>
+                                </Setter>
+                            </Style>
+                        </ListBox.ItemContainerStyle>
+
+                        <ListBox.ItemTemplate>
+                            <DataTemplate DataType="{x:Type vm:SnippetItemViewModel}">
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="Auto" />
+                                    </Grid.ColumnDefinitions>
+
+                                    <StackPanel Grid.Column="0">
+                                        <DockPanel>
+                                            <!-- Badge del código -->
+                                            <Border Style="{StaticResource CodeBadgeStyle}"
+                                                    Margin="0,0,8,0">
+                                                <TextBlock Text="{Binding Code}"
+                                                           FontFamily="Cascadia Code, Consolas, Courier New"
+                                                           FontWeight="Bold"
+                                                           FontSize="12"
+                                                           Foreground="{DynamicResource AccentBrush}" />
+                                            </Border>
+                                            <!-- Nombre -->
+                                            <TextBlock Text="{Binding Name}"
+                                                       FontWeight="SemiBold"
+                                                       FontSize="13"
+                                                       VerticalAlignment="Center"
+                                                       TextTrimming="CharacterEllipsis" />
+                                        </DockPanel>
+
+                                        <!-- Vista previa del contenido -->
+                                        <TextBlock Text="{Binding ContentPreview}"
+                                                   Foreground="{DynamicResource TextSecondaryBrush}"
+                                                   FontSize="12"
+                                                   Margin="0,4,0,0"
+                                                   TextTrimming="CharacterEllipsis" />
+
+                                        <!-- Metadatos de carpeta -->
+                                        <TextBlock Text="{Binding FolderName, StringFormat='📁 {0}'}"
+                                                   FontSize="11"
+                                                   Foreground="{DynamicResource TextMutedBrush}"
+                                                   Margin="0,4,0,0">
+                                            <TextBlock.Style>
+                                                <Style TargetType="TextBlock">
+                                                    <Setter Property="Visibility" Value="Visible" />
+                                                    <Style.Triggers>
+                                                        <DataTrigger Binding="{Binding FolderName}" Value="{x:Null}">
+                                                            <Setter Property="Visibility" Value="Collapsed" />
+                                                        </DataTrigger>
+                                                    </Style.Triggers>
+                                                </Style>
+                                            </TextBlock.Style>
+                                        </TextBlock>
+                                    </StackPanel>
+
+                                    <!-- Acciones en Item: Favorito y Estado -->
+                                    <StackPanel Grid.Column="1"
+                                                Orientation="Horizontal"
+                                                VerticalAlignment="Center"
+                                                Margin="6,0,0,0">
+                                        <!-- Botón Favorito -->
+                                        <Button Command="{Binding DataContext.ToggleFavoriteCommand, RelativeSource={RelativeSource AncestorType=ListBox}}"
+                                                CommandParameter="{Binding}"
+                                                Background="Transparent"
+                                                BorderThickness="0"
+                                                Cursor="Hand"
+                                                Margin="0,0,4,0">
+                                            <TextBlock FontSize="14">
+                                                <TextBlock.Style>
+                                                    <Style TargetType="TextBlock">
+                                                        <Setter Property="Text" Value="☆" />
+                                                        <Setter Property="Foreground" Value="{DynamicResource TextMutedBrush}" />
+                                                        <Style.Triggers>
+                                                            <DataTrigger Binding="{Binding IsFavorite}" Value="True">
+                                                                <Setter Property="Text" Value="⭐" />
+                                                                <Setter Property="Foreground" Value="#F59E0B" />
+                                                            </DataTrigger>
+                                                        </Style.Triggers>
+                                                    </Style>
+                                                </TextBlock.Style>
+                                            </TextBlock>
+                                        </Button>
+
+                                        <!-- Checkbox Activo -->
+                                        <CheckBox IsChecked="{Binding IsActive}"
+                                                  Command="{Binding DataContext.ToggleActiveCommand, RelativeSource={RelativeSource AncestorType=ListBox}}"
+                                                  CommandParameter="{Binding}"
+                                                  ToolTip="Activar o desactivar este atajo (RF-01)"
+                                                  VerticalAlignment="Center" />
+                                    </StackPanel>
+                                </Grid>
+                            </DataTemplate>
+                        </ListBox.ItemTemplate>
+                    </ListBox>
+                </DockPanel>
+            </Grid>
+
+            <!-- Separador Vertical Redimensionable -->
+            <GridSplitter Grid.Column="2"
+                          HorizontalAlignment="Stretch"
+                          Background="{DynamicResource BorderBrush}" />
+
+            <!-- ============================================== -->
+            <!-- PANEL DERECHO (INSPECTOR Y EDITOR DE ATAJO)     -->
+            <!-- ============================================== -->
+            <Grid Grid.Column="3" Background="{DynamicResource BgPrimaryBrush}">
+                <!-- Estado Vacío (si no hay atajo en edición) -->
+                <StackPanel VerticalAlignment="Center"
+                            HorizontalAlignment="Center"
+                            Margin="32">
+                    <StackPanel.Style>
+                        <Style TargetType="StackPanel">
+                            <Setter Property="Visibility" Value="Collapsed" />
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding Editor.IsVisible}" Value="False">
+                                    <Setter Property="Visibility" Value="Visible" />
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </StackPanel.Style>
+                    <TextBlock Text="⚡" FontSize="48" HorizontalAlignment="Center" Margin="0,0,0,12" />
+                    <TextBlock Text="Ningún atajo seleccionado"
+                               FontWeight="Bold"
+                               FontSize="16"
+                               HorizontalAlignment="Center"
+                               Foreground="{DynamicResource TextPrimaryBrush}" />
+                    <TextBlock Text="Selecciona un atajo de la lista para editarlo o pulsa Ctrl+N para crear uno nuevo."
+                               FontSize="13"
+                               Foreground="{DynamicResource TextSecondaryBrush}"
+                               TextWrapping="Wrap"
+                               TextAlignment="Center"
+                               MaxWidth="300"
+                               Margin="0,8,0,16" />
+                    <Button Content="+ Crear Nuevo Atajo"
+                            Command="{Binding NewSnippetCommand}"
+                            Style="{StaticResource AccentButtonStyle}"
+                            HorizontalAlignment="Center" />
+                </StackPanel>
+
+                <!-- Panel Editor Activo -->
+                <ScrollViewer VerticalScrollBarVisibility="Auto">
+                    <ScrollViewer.Style>
+                        <Style TargetType="ScrollViewer">
+                            <Setter Property="Visibility" Value="Visible" />
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding Editor.IsVisible}" Value="False">
+                                    <Setter Property="Visibility" Value="Collapsed" />
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </ScrollViewer.Style>
+
+                    <StackPanel Margin="20,16">
+                        <!-- Título de Edición -->
+                        <DockPanel Margin="0,0,0,12">
+                            <TextBlock FontWeight="Bold" FontSize="16" VerticalAlignment="Center">
+                                <TextBlock.Style>
+                                    <Style TargetType="TextBlock">
+                                        <Setter Property="Text" Value="Editar Atajo" />
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding Editor.IsNew}" Value="True">
+                                                <Setter Property="Text" Value="Nuevo Atajo" />
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </TextBlock.Style>
+                            </TextBlock>
+                        </DockPanel>
+
+                        <!-- Mensaje de Error de Validación -->
+                        <Border Background="#FEE2E2"
+                                BorderBrush="{DynamicResource DangerBrush}"
+                                BorderThickness="1"
+                                CornerRadius="6"
+                                Padding="10,6"
+                                Margin="0,0,0,12">
+                            <Border.Style>
+                                <Style TargetType="Border">
+                                    <Setter Property="Visibility" Value="Visible" />
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding Editor.HasError}" Value="False">
+                                            <Setter Property="Visibility" Value="Collapsed" />
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </Border.Style>
+                            <TextBlock Text="{Binding Editor.ErrorMessage}"
+                                       Foreground="{DynamicResource DangerBrush}"
+                                       FontWeight="SemiBold"
+                                       FontSize="12" />
+                        </Border>
+
+                        <!-- Campo: Código de Disparo (RF-02) -->
+                        <TextBlock Text="Código de activación (disparador):"
+                                   FontWeight="SemiBold"
+                                   FontSize="12"
+                                   Foreground="{DynamicResource TextSecondaryBrush}"
+                                   Margin="0,0,0,4" />
+                        <TextBox Text="{Binding Editor.Code, UpdateSourceTrigger=PropertyChanged}"
+                                 FontFamily="Cascadia Code, Consolas, Courier New"
+                                 FontWeight="Bold"
+                                 Margin="0,0,0,12" />
+
+                        <!-- Campo: Nombre Descriptivo -->
+                        <TextBlock Text="Nombre del atajo:"
+                                   FontWeight="SemiBold"
+                                   FontSize="12"
+                                   Foreground="{DynamicResource TextSecondaryBrush}"
+                                   Margin="0,0,0,4" />
+                        <TextBox Text="{Binding Editor.Name, UpdateSourceTrigger=PropertyChanged}"
+                                 Margin="0,0,0,12" />
+
+                        <!-- Campo: Carpeta -->
+                        <TextBlock Text="Carpeta contenedora:"
+                                   FontWeight="SemiBold"
+                                   FontSize="12"
+                                   Foreground="{DynamicResource TextSecondaryBrush}"
+                                   Margin="0,0,0,4" />
+                        <ComboBox ItemsSource="{Binding Editor.AvailableFolders}"
+                                  SelectedValue="{Binding Editor.SelectedFolderId}"
+                                  SelectedValuePath="Id"
+                                  DisplayMemberPath="DisplayName"
+                                  Margin="0,0,0,12" />
+
+                        <!-- Opciones y Conmutadores -->
+                        <StackPanel Orientation="Horizontal" Margin="0,0,0,12">
+                            <CheckBox Content="Sensible a mayúsculas"
+                                      IsChecked="{Binding Editor.CaseSensitive}"
+                                      Margin="0,0,16,0" />
+                            <CheckBox Content="Atajo activo"
+                                      IsChecked="{Binding Editor.IsActive}"
+                                      Margin="0,0,16,0" />
+                            <CheckBox Content="Favorito"
+                                      IsChecked="{Binding Editor.IsFavorite}" />
+                        </StackPanel>
+
+                        <!-- Barra de Herramientas de Inserción de Variables -->
+                        <DockPanel Margin="0,0,0,4">
+                            <TextBlock Text="Contenido del atajo (texto a expandir):"
+                                       FontWeight="SemiBold"
+                                       FontSize="12"
+                                       Foreground="{DynamicResource TextSecondaryBrush}"
+                                       VerticalAlignment="Center" />
+                            <TextBlock Text="{Binding Editor.ContentLengthInfo}"
+                                       HorizontalAlignment="Right"
+                                       FontSize="11"
+                                       Foreground="{DynamicResource TextMutedBrush}"
+                                       VerticalAlignment="Center" />
+                        </DockPanel>
+
+                        <!-- Botones de inserción de variables -->
+                        <WrapPanel Margin="0,0,0,6">
+                            <Button Content="+ Fecha {date}"
+                                    Command="{Binding Editor.InsertVariableCommand}"
+                                    CommandParameter="{}{date}"
+                                    Style="{StaticResource SecondaryButtonStyle}"
+                                    Margin="0,0,4,4" Padding="6,2" FontSize="11" />
+                            <Button Content="+ Hora {time}"
+                                    Command="{Binding Editor.InsertVariableCommand}"
+                                    CommandParameter="{}{time}"
+                                    Style="{StaticResource SecondaryButtonStyle}"
+                                    Margin="0,0,4,4" Padding="6,2" FontSize="11" />
+                            <Button Content="+ Fecha y Hora {datetime}"
+                                    Command="{Binding Editor.InsertVariableCommand}"
+                                    CommandParameter="{}{datetime}"
+                                    Style="{StaticResource SecondaryButtonStyle}"
+                                    Margin="0,0,4,4" Padding="6,2" FontSize="11" />
+                            <Button Content="+ Variable Interactiva {input:campo}"
+                                    Command="{Binding Editor.InsertVariableCommand}"
+                                    CommandParameter="{}{input:nombre}"
+                                    Style="{StaticResource SecondaryButtonStyle}"
+                                    Margin="0,0,4,4" Padding="6,2" FontSize="11" />
+                            <Button Content="+ Portapapeles {clipboard}"
+                                    Command="{Binding Editor.InsertVariableCommand}"
+                                    CommandParameter="{}{clipboard}"
+                                    Style="{StaticResource SecondaryButtonStyle}"
+                                    Margin="0,0,4,4" Padding="6,2" FontSize="11" />
+                        </WrapPanel>
+
+                        <!-- Campo de Contenido Multilínea -->
+                        <TextBox Text="{Binding Editor.Content, UpdateSourceTrigger=PropertyChanged}"
+                                 AcceptsReturn="True"
+                                 AcceptsTab="True"
+                                 TextWrapping="Wrap"
+                                 VerticalScrollBarVisibility="Auto"
+                                 MinHeight="140"
+                                 MaxHeight="260"
+                                 FontFamily="Cascadia Code, Consolas, Courier New"
+                                 FontSize="12"
+                                 Margin="0,0,0,16" />
+
+                        <!-- Acciones Guardar / Descartar -->
+                        <DockPanel Margin="0,0,0,16">
+                            <StackPanel Orientation="Horizontal" DockPanel.Dock="Right">
+                                <Button Content="Descartar"
+                                        Command="{Binding Editor.CancelCommand}"
+                                        Style="{StaticResource SecondaryButtonStyle}"
+                                        Margin="0,0,8,0"
+                                        Padding="12,6" />
+                                <Button Content="Guardar Atajo (Ctrl+S)"
+                                        Command="{Binding Editor.SaveCommand}"
+                                        Style="{StaticResource AccentButtonStyle}"
+                                        Padding="14,6" />
+                            </StackPanel>
+
+                            <StackPanel Orientation="Horizontal">
+                                <Button Content="Duplicar"
+                                        Command="{Binding DuplicateSnippetCommand}"
+                                        Style="{StaticResource SecondaryButtonStyle}"
+                                        Margin="0,0,8,0"
+                                        Padding="10,5" />
+                                <Button Content="Eliminar"
+                                        Command="{Binding DeleteSnippetCommand}"
+                                        Style="{StaticResource DangerButtonStyle}"
+                                        Padding="10,5" />
+                            </StackPanel>
+                        </DockPanel>
+
+                        <!-- Estadísticas de Uso (RF-17) -->
+                        <Border Background="{DynamicResource BgCardBrush}"
+                                BorderBrush="{DynamicResource BorderBrush}"
+                                BorderThickness="1"
+                                CornerRadius="6"
+                                Padding="12,8">
+                            <DockPanel>
+                                <TextBlock Text="{Binding Editor.UsageCount, StringFormat='Veces utilizado: {0}'}"
+                                           FontSize="11"
+                                           Foreground="{DynamicResource TextSecondaryBrush}" />
+                                <TextBlock Text="{Binding Editor.LastUsedAt, StringFormat='Último uso: {0:dd/MM/yyyy HH:mm}', TargetNullValue='Último uso: Nunca'}"
+                                           HorizontalAlignment="Right"
+                                           FontSize="11"
+                                           Foreground="{DynamicResource TextSecondaryBrush}" />
+                            </DockPanel>
+                        </Border>
+                    </StackPanel>
+                </ScrollViewer>
+            </Grid>
+        </Grid>
+
+        <!-- ============================================== -->
+        <!-- BARRA DE ESTADO INFERIOR                        -->
+        <!-- ============================================== -->
+        <Border Grid.Row="1"
+                Background="{DynamicResource BgSidebarBrush}"
+                BorderBrush="{DynamicResource BorderBrush}"
+                BorderThickness="0,1,0,0"
+                Padding="12,6">
+            <DockPanel>
+                <Button Command="{Binding TogglePauseOrchestratorCommand}"
+                        DockPanel.Dock="Right"
+                        Style="{StaticResource SecondaryButtonStyle}"
+                        Padding="8,2"
+                        FontSize="11">
+                    <Button.Content>
+                        <TextBlock>
+                            <TextBlock.Style>
+                                <Style TargetType="TextBlock">
+                                    <Setter Property="Text" Value="⏸ Pausar motor" />
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding IsOrchestratorPaused}" Value="True">
+                                            <Setter Property="Text" Value="▶ Reanudar motor" />
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </TextBlock.Style>
+                        </TextBlock>
+                    </Button.Content>
+                </Button>
+
+                <TextBlock Text="{Binding StatusMessage}"
+                           FontSize="12"
+                           Foreground="{DynamicResource TextSecondaryBrush}"
+                           VerticalAlignment="Center"
+                           TextTrimming="CharacterEllipsis" />
+            </DockPanel>
+        </Border>
     </Grid>
 </Window>
