@@ -23,5 +23,10 @@ public enum VariableType
     /// <summary>
     /// Variable interactiva solicitada al usuario mediante ventana emergente ({input:Nombre}).
     /// </summary>
-    InteractiveInput
+    InteractiveInput,
+
+    /// <summary>
+    /// Posicionamiento del cursor tras la expansión ({cursor}).
+    /// </summary>
+    CursorPosition
 }

@@ -27,52 +27,42 @@ public sealed class WindowsTextInjectorTests
         var result = await injector.InjectAsync(2, "ab");
 
         Assert.True(result);
-        Assert.Single(_fakeWin32.SentInputs);
+        // Debe realizarse en dos etapas: una para los retrocesos y otra para el texto inyectado
+        Assert.Equal(2, _fakeWin32.SentInputs.Count);
 
-        var inputs = _fakeWin32.SentInputs[0];
-        // 2 retrocesos (2 * 2 = 4) + 2 caracteres (2 * 2 = 4) = 8 inputs en total
-        Assert.Equal(8, inputs.Length);
+        var backInputs = _fakeWin32.SentInputs[0];
+        Assert.Equal(4, backInputs.Length); // 2 retrocesos * 2 (down y up)
 
         // Verificar los 2 retrocesos
         // 1. VK_BACK Down
-        Assert.Equal(Win32Constants.INPUT_KEYBOARD, inputs[0].type);
-        Assert.Equal(Win32Constants.VK_BACK, inputs[0].u.ki.wVk);
-        Assert.Equal(0u, inputs[0].u.ki.dwFlags);
-        Assert.Equal(Win32Constants.INJECTED_SIGNATURE, inputs[0].u.ki.dwExtraInfo);
+        Assert.Equal(Win32Constants.INPUT_KEYBOARD, backInputs[0].type);
+        Assert.Equal(Win32Constants.VK_BACK, backInputs[0].u.ki.wVk);
+        Assert.Equal(0u, backInputs[0].u.ki.dwFlags);
+        Assert.Equal(Win32Constants.INJECTED_SIGNATURE, backInputs[0].u.ki.dwExtraInfo);
 
         // 2. VK_BACK Up
-        Assert.Equal(Win32Constants.VK_BACK, inputs[1].u.ki.wVk);
-        Assert.Equal(Win32Constants.KEYEVENTF_KEYUP, inputs[1].u.ki.dwFlags);
-        Assert.Equal(Win32Constants.INJECTED_SIGNATURE, inputs[1].u.ki.dwExtraInfo);
+        Assert.Equal(Win32Constants.VK_BACK, backInputs[1].u.ki.wVk);
+        Assert.Equal(Win32Constants.KEYEVENTF_KEYUP, backInputs[1].u.ki.dwFlags);
 
-        // 3. VK_BACK Down
-        Assert.Equal(Win32Constants.VK_BACK, inputs[2].u.ki.wVk);
-        Assert.Equal(Win32Constants.INJECTED_SIGNATURE, inputs[2].u.ki.dwExtraInfo);
-
-        // 4. VK_BACK Up
-        Assert.Equal(Win32Constants.VK_BACK, inputs[3].u.ki.wVk);
-        Assert.Equal(Win32Constants.KEYEVENTF_KEYUP, inputs[3].u.ki.dwFlags);
+        var textInputs = _fakeWin32.SentInputs[1];
+        Assert.Equal(4, textInputs.Length); // 2 caracteres * 2 (down y up)
 
         // Verificar el primer carácter Unicode 'a'
-        // 5. 'a' Down
-        Assert.Equal(0, inputs[4].u.ki.wVk);
-        Assert.Equal((ushort)'a', inputs[4].u.ki.wScan);
-        Assert.Equal(Win32Constants.KEYEVENTF_UNICODE, inputs[4].u.ki.dwFlags);
-        Assert.Equal(Win32Constants.INJECTED_SIGNATURE, inputs[4].u.ki.dwExtraInfo);
+        Assert.Equal(0, textInputs[0].u.ki.wVk);
+        Assert.Equal((ushort)'a', textInputs[0].u.ki.wScan);
+        Assert.Equal(Win32Constants.KEYEVENTF_UNICODE, textInputs[0].u.ki.dwFlags);
+        Assert.Equal(Win32Constants.INJECTED_SIGNATURE, textInputs[0].u.ki.dwExtraInfo);
 
-        // 6. 'a' Up
-        Assert.Equal(0, inputs[5].u.ki.wVk);
-        Assert.Equal((ushort)'a', inputs[5].u.ki.wScan);
-        Assert.Equal(Win32Constants.KEYEVENTF_UNICODE | Win32Constants.KEYEVENTF_KEYUP, inputs[5].u.ki.dwFlags);
+        Assert.Equal(0, textInputs[1].u.ki.wVk);
+        Assert.Equal((ushort)'a', textInputs[1].u.ki.wScan);
+        Assert.Equal(Win32Constants.KEYEVENTF_UNICODE | Win32Constants.KEYEVENTF_KEYUP, textInputs[1].u.ki.dwFlags);
 
         // Verificar el segundo carácter Unicode 'b'
-        // 7. 'b' Down
-        Assert.Equal((ushort)'b', inputs[6].u.ki.wScan);
-        Assert.Equal(Win32Constants.KEYEVENTF_UNICODE, inputs[6].u.ki.dwFlags);
+        Assert.Equal((ushort)'b', textInputs[2].u.ki.wScan);
+        Assert.Equal(Win32Constants.KEYEVENTF_UNICODE, textInputs[2].u.ki.dwFlags);
 
-        // 8. 'b' Up
-        Assert.Equal((ushort)'b', inputs[7].u.ki.wScan);
-        Assert.Equal(Win32Constants.KEYEVENTF_UNICODE | Win32Constants.KEYEVENTF_KEYUP, inputs[7].u.ki.dwFlags);
+        Assert.Equal((ushort)'b', textInputs[3].u.ki.wScan);
+        Assert.Equal(Win32Constants.KEYEVENTF_UNICODE | Win32Constants.KEYEVENTF_KEYUP, textInputs[3].u.ki.dwFlags);
     }
 
     [Fact]
@@ -88,7 +78,7 @@ public sealed class WindowsTextInjectorTests
 
         Assert.Equal((ushort)'ñ', inputs[0].u.ki.wScan);
         Assert.Equal((ushort)'á', inputs[2].u.ki.wScan);
-        Assert.Equal((ushort)'\n', inputs[4].u.ki.wScan);
+        Assert.Equal(Win32Constants.VK_RETURN, inputs[4].u.ki.wVk);
     }
 
     [Fact]

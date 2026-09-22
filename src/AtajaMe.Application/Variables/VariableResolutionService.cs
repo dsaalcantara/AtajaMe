@@ -12,11 +12,11 @@ namespace AtajaMe.Application.Variables;
 public sealed class VariableResolutionService : IVariableResolutionService
 {
     private static readonly Regex AutoVariableRegex = new(
-        @"\{(date|time|datetime)\}",
+        @"\{(date|fecha|time|hora|datetime|fechahora|cursor)\}",
         RegexOptions.Compiled | RegexOptions.IgnoreCase);
 
     private static readonly Regex InteractiveVariableRegex = new(
-        @"\{input:([^}]+)\}",
+        @"\{(?:input:([^}]+)|(?!(?:date|fecha|time|hora|datetime|fechahora|cursor)\})([^}:|]+(?:\|[^}]+)?))\}",
         RegexOptions.Compiled | RegexOptions.IgnoreCase);
 
     private readonly VariableResolutionOptions _options;
@@ -72,9 +72,10 @@ public sealed class VariableResolutionService : IVariableResolutionService
             var identifier = match.Groups[1].Value.ToLowerInvariant();
             return identifier switch
             {
-                "date" => effectiveTime.ToString(_options.DateFormat, effectiveCulture),
-                "time" => effectiveTime.ToString(_options.TimeFormat, effectiveCulture),
-                "datetime" => effectiveTime.ToString(_options.DateTimeFormat, effectiveCulture),
+                "date" or "fecha" => effectiveTime.ToString(_options.DateFormat, effectiveCulture),
+                "time" or "hora" => effectiveTime.ToString(_options.TimeFormat, effectiveCulture),
+                "datetime" or "fechahora" => effectiveTime.ToString(_options.DateTimeFormat, effectiveCulture),
+                "cursor" => string.Empty, // El cursor se trata en inyección
                 _ => match.Value
             };
         });
@@ -93,7 +94,10 @@ public sealed class VariableResolutionService : IVariableResolutionService
 
         return InteractiveVariableRegex.Replace(content, match =>
         {
-            var param = match.Groups[1].Value.Trim();
+            var param = !string.IsNullOrEmpty(match.Groups[1].Value)
+                ? match.Groups[1].Value
+                : match.Groups[2].Value;
+
             string name;
             string? defaultValue = null;
 
@@ -105,7 +109,7 @@ public sealed class VariableResolutionService : IVariableResolutionService
             }
             else
             {
-                name = param;
+                name = param.Trim();
             }
 
             if (inputDict.TryGetValue(name, out var value) && !string.IsNullOrEmpty(value))

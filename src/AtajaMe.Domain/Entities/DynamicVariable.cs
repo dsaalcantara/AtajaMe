@@ -9,7 +9,7 @@ namespace AtajaMe.Domain.Entities;
 public sealed class DynamicVariable
 {
     private static readonly Regex VariableRegex = new(
-        @"\{(date|time|datetime|input:([^}]+))\}",
+        @"\{(date|fecha|time|hora|datetime|fechahora|cursor|input:([^}]+)|([^}:|]+(?:\|[^}]+)?))\}",
         RegexOptions.Compiled | RegexOptions.IgnoreCase);
 
     public VariableType Type { get; }
@@ -43,21 +43,28 @@ public sealed class DynamicVariable
             var rawTag = match.Value;
             var identifier = match.Groups[1].Value.ToLowerInvariant();
 
-            if (identifier == "date")
+            if (identifier is "date" or "fecha")
             {
                 variables.Add(new DynamicVariable(VariableType.SystemDate, rawTag, "Fecha"));
             }
-            else if (identifier == "time")
+            else if (identifier is "time" or "hora")
             {
                 variables.Add(new DynamicVariable(VariableType.SystemTime, rawTag, "Hora"));
             }
-            else if (identifier == "datetime")
+            else if (identifier is "datetime" or "fechahora")
             {
                 variables.Add(new DynamicVariable(VariableType.SystemDateTime, rawTag, "Fecha y Hora"));
             }
-            else if (identifier.StartsWith("input:"))
+            else if (identifier is "cursor")
             {
-                var inputParam = match.Groups[2].Value.Trim();
+                variables.Add(new DynamicVariable(VariableType.CursorPosition, rawTag, "Cursor"));
+            }
+            else
+            {
+                var inputParam = identifier.StartsWith("input:")
+                    ? match.Groups[2].Value.Trim()
+                    : match.Groups[3].Value.Trim();
+
                 string name;
                 string? defaultValue = null;
 

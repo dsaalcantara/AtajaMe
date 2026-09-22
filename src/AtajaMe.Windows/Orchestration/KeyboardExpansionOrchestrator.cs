@@ -194,14 +194,23 @@ public sealed class KeyboardExpansionOrchestrator : IKeyboardExpansionOrchestrat
     {
         if (result.Status == ExpansionStatus.Success && result.ExpandedContent != null)
         {
-            bool injected = await _textInjector.InjectAsync(
-                result.CharactersToDelete,
-                result.ExpandedContent,
-                cancellationToken);
-
-            if (injected && result.Snippet != null)
+            IsPaused = true;
+            try
             {
-                await _engine.RecordExpansionUsageAsync(result.Snippet.Id, cancellationToken);
+                bool injected = await _textInjector.InjectAsync(
+                    result.CharactersToDelete,
+                    result.ExpandedContent,
+                    cancellationToken);
+
+                if (injected && result.Snippet != null)
+                {
+                    await _engine.RecordExpansionUsageAsync(result.Snippet.Id, cancellationToken);
+                }
+            }
+            finally
+            {
+                _engine.ResetBuffer();
+                IsPaused = false;
             }
         }
     }
@@ -231,6 +240,7 @@ public sealed class KeyboardExpansionOrchestrator : IKeyboardExpansionOrchestrat
 
         if (pendingResult.Snippet == null || pendingResult.ExpandedContent == null)
         {
+            _engine.ResetBuffer();
             return false;
         }
 
@@ -239,17 +249,26 @@ public sealed class KeyboardExpansionOrchestrator : IKeyboardExpansionOrchestrat
             pendingResult.ExpandedContent,
             userValues);
 
-        bool injected = await _textInjector.InjectAsync(
-            pendingResult.CharactersToDelete,
-            finalizedText,
-            cancellationToken);
-
-        if (injected)
+        IsPaused = true;
+        try
         {
-            await _engine.RecordExpansionUsageAsync(pendingResult.Snippet.Id, cancellationToken);
-        }
+            bool injected = await _textInjector.InjectAsync(
+                pendingResult.CharactersToDelete,
+                finalizedText,
+                cancellationToken);
 
-        return injected;
+            if (injected && pendingResult.Snippet != null)
+            {
+                await _engine.RecordExpansionUsageAsync(pendingResult.Snippet.Id, cancellationToken);
+            }
+
+            return injected;
+        }
+        finally
+        {
+            _engine.ResetBuffer();
+            IsPaused = false;
+        }
     }
 
     private char? TranslateKeyToChar(RawKeyEvent keyEvent)
