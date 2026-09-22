@@ -22,6 +22,10 @@ public sealed class SqliteConnectionFactory : ISqliteConnectionFactory
             var dbPath = Path.Combine(directory, "atajame.db");
             _connectionString = $"Data Source={dbPath};Cache=Shared";
         }
+        else if (!connectionString.Contains('='))
+        {
+            _connectionString = $"Data Source={connectionString};Cache=Shared";
+        }
         else
         {
             _connectionString = connectionString;

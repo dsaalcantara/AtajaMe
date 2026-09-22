@@ -95,19 +95,18 @@ public partial class App : System.Windows.Application
     {
         base.OnStartup(e);
 
-        // Ciclo de vida persistente en segundo plano (RF-34, RF-35)
-        ShutdownMode = ShutdownMode.OnExplicitShutdown;
+        try
+        {
+            // 1. Inicialización de Almacenamiento y Esquema SQLite
+            var appDataDir = Path.Combine(
+                Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+                "AtajaMe");
+            Directory.CreateDirectory(appDataDir);
+            _dbPath = Path.Combine(appDataDir, "atajame.db");
 
-        // 1. Inicialización de Almacenamiento y Esquema SQLite
-        var appDataDir = Path.Combine(
-            Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-            "AtajaMe");
-        Directory.CreateDirectory(appDataDir);
-        _dbPath = Path.Combine(appDataDir, "atajame.db");
-
-        _connectionFactory = new SqliteConnectionFactory(_dbPath);
-        _dbInitializer = new SqliteDatabaseInitializer(_connectionFactory);
-        await _dbInitializer.InitializeAsync();
+            _connectionFactory = new SqliteConnectionFactory($"Data Source={_dbPath};Cache=Shared");
+            _dbInitializer = new SqliteDatabaseInitializer(_connectionFactory);
+            await _dbInitializer.InitializeAsync();
 
         // 2. Repositorios
         _snippetRepo = new SnippetRepository(_connectionFactory);
@@ -215,6 +214,31 @@ public partial class App : System.Windows.Application
         // 12. Iniciar orquestador de teclado
         await _orchestrator.StartAsync();
 
+        // Sembrado inicial de bienvenida si la biblioteca está vacía
+        var existingSnippets = await _snippetRepo.GetAllActiveAsync();
+        if (!existingSnippets.Any())
+        {
+            var generalFolder = AtajaMe.Domain.Entities.Folder.Create("General");
+            await _folderRepo.AddAsync(generalFolder);
+
+            var welcomeSnippet = AtajaMe.Domain.Entities.Snippet.Create(
+                ":hola",
+                "Bienvenida a AtajaMe",
+                "¡Hola! Te damos la bienvenida a AtajaMe. Hoy es {fecha} y son las {hora}.",
+                generalFolder.Id);
+
+            var interactiveSnippet = AtajaMe.Domain.Entities.Snippet.Create(
+                ":saludo",
+                "Saludo Interactivo",
+                "Hola {nombre}, un gusto saludarte. Hoy es {fecha}.",
+                generalFolder.Id);
+
+            await _snippetRepo.AddAsync(welcomeSnippet);
+            await _snippetRepo.AddAsync(interactiveSnippet);
+
+            await _mainViewModel.LoadDataAsync();
+        }
+
         // 13. Mostrar ventana salvo que se indique arranque en segundo plano / minimizado
         bool startMinimized = settings.StartMinimized ||
                               e.Args.Any(a => a.Equals("--minimized", StringComparison.OrdinalIgnoreCase) ||
@@ -224,7 +248,21 @@ public partial class App : System.Windows.Application
         {
             _mainWindow.Show();
         }
+
+        // Ciclo de vida persistente en segundo plano (RF-34, RF-35)
+        ShutdownMode = ShutdownMode.OnExplicitShutdown;
     }
+    catch (Exception ex)
+    {
+        System.Windows.MessageBox.Show(
+            $"Ocurrió un error al iniciar AtajaMe:\n\n{ex.Message}\n\nDetalles:\n{ex.StackTrace}",
+            "Error en AtajaMe",
+            System.Windows.MessageBoxButton.OK,
+            System.Windows.MessageBoxImage.Error);
+
+        Shutdown(1);
+    }
+}
 
     private void OnInteractiveInputRequested(object? sender, InteractiveInputRequestedEventArgs e)
     {

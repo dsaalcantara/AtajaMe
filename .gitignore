@@ -24,6 +24,8 @@ bld/
 [Ll]og/
 [Ll]ogs/
 [Tt]est[Rr]esults/
+publish/
+
 
 ## SQLite & Local databases
 *.db
