@@ -64,7 +64,7 @@ public sealed class AsyncRelayCommand : ICommand
 
     public bool CanExecute(object? parameter) => !_isExecuting && (_canExecute?.Invoke(parameter) ?? true);
 
-    public async void Execute(object? parameter)
+    public async Task ExecuteAsync(object? parameter)
     {
         if (!CanExecute(parameter))
         {
@@ -82,6 +82,11 @@ public sealed class AsyncRelayCommand : ICommand
             _isExecuting = false;
             RaiseCanExecuteChanged();
         }
+    }
+
+    public async void Execute(object? parameter)
+    {
+        await ExecuteAsync(parameter);
     }
 
     public void RaiseCanExecuteChanged() => CommandManager.InvalidateRequerySuggested();

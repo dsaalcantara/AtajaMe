@@ -52,6 +52,34 @@ public partial class MainWindow : Window
         }
     }
 
+    private void OnTreeViewItemPreviewMouseRightButtonDown(object sender, System.Windows.Input.MouseButtonEventArgs e)
+    {
+        if (sender is System.Windows.Controls.TreeViewItem treeViewItem)
+        {
+            treeViewItem.Focus();
+            treeViewItem.IsSelected = true;
+        }
+    }
+
+    private void OnFolderTreeKeyDown(object sender, System.Windows.Input.KeyEventArgs e)
+    {
+        if (ViewModel.SelectedFolder == null)
+        {
+            return;
+        }
+
+        if (e.Key == System.Windows.Input.Key.F2 && ViewModel.RenameFolderCommand.CanExecute(ViewModel.SelectedFolder))
+        {
+            ViewModel.RenameFolderCommand.Execute(ViewModel.SelectedFolder);
+            e.Handled = true;
+        }
+        else if (e.Key == System.Windows.Input.Key.Delete && ViewModel.DeleteFolderCommand.CanExecute(ViewModel.SelectedFolder))
+        {
+            ViewModel.DeleteFolderCommand.Execute(ViewModel.SelectedFolder);
+            e.Handled = true;
+        }
+    }
+
     private void OnSettingsButtonClick(object sender, RoutedEventArgs e)
     {
         var app = (App)System.Windows.Application.Current;

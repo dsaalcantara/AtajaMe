@@ -182,7 +182,32 @@
                             <TreeView ItemsSource="{Binding FolderTree}"
                                       Background="Transparent"
                                       BorderThickness="0"
-                                      SelectedItemChanged="OnFolderTreeSelectedItemChanged">
+                                      SelectedItemChanged="OnFolderTreeSelectedItemChanged"
+                                      KeyDown="OnFolderTreeKeyDown">
+                                <TreeView.ItemContainerStyle>
+                                    <Style TargetType="{x:Type TreeViewItem}">
+                                        <Setter Property="IsExpanded" Value="{Binding IsExpanded, Mode=TwoWay}" />
+                                        <Setter Property="IsSelected" Value="{Binding IsSelected, Mode=TwoWay}" />
+                                        <Setter Property="Tag" Value="{Binding DataContext, RelativeSource={RelativeSource AncestorType=TreeView}}" />
+                                        <EventSetter Event="PreviewMouseRightButtonDown" Handler="OnTreeViewItemPreviewMouseRightButtonDown" />
+                                        <Setter Property="ContextMenu">
+                                            <Setter.Value>
+                                                <ContextMenu>
+                                                    <MenuItem Header="➕ Nueva subcarpeta..."
+                                                              Command="{Binding PlacementTarget.Tag.NewSubFolderCommand, RelativeSource={RelativeSource AncestorType=ContextMenu}}"
+                                                              CommandParameter="{Binding PlacementTarget.DataContext, RelativeSource={RelativeSource AncestorType=ContextMenu}}" />
+                                                    <MenuItem Header="✏️ Renombrar carpeta..."
+                                                              Command="{Binding PlacementTarget.Tag.RenameFolderCommand, RelativeSource={RelativeSource AncestorType=ContextMenu}}"
+                                                              CommandParameter="{Binding PlacementTarget.DataContext, RelativeSource={RelativeSource AncestorType=ContextMenu}}" />
+                                                    <Separator />
+                                                    <MenuItem Header="🗑️ Eliminar carpeta"
+                                                              Command="{Binding PlacementTarget.Tag.DeleteFolderCommand, RelativeSource={RelativeSource AncestorType=ContextMenu}}"
+                                                              CommandParameter="{Binding PlacementTarget.DataContext, RelativeSource={RelativeSource AncestorType=ContextMenu}}" />
+                                                </ContextMenu>
+                                            </Setter.Value>
+                                        </Setter>
+                                    </Style>
+                                </TreeView.ItemContainerStyle>
                                 <TreeView.ItemTemplate>
                                     <HierarchicalDataTemplate DataType="{x:Type vm:FolderTreeItemViewModel}"
                                                               ItemsSource="{Binding Children}">
@@ -234,11 +259,54 @@
                                     Style="{StaticResource AccentButtonStyle}"
                                     ToolTip="Crear un nuevo atajo (Ctrl+N)" />
                         </StackPanel>
-                        <TextBlock Text="{Binding CurrentSectionTitle}"
-                                   FontWeight="Bold"
-                                   FontSize="16"
-                                   VerticalAlignment="Center"
-                                   TextTrimming="CharacterEllipsis" />
+                        
+                        <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                            <TextBlock Text="{Binding CurrentSectionTitle}"
+                                       FontWeight="Bold"
+                                       FontSize="16"
+                                       VerticalAlignment="Center"
+                                       TextTrimming="CharacterEllipsis" />
+
+                            <!-- Acciones directas para la carpeta seleccionada -->
+                            <StackPanel Orientation="Horizontal" Margin="12,0,0,0">
+                                <StackPanel.Style>
+                                    <Style TargetType="StackPanel">
+                                        <Setter Property="Visibility" Value="Collapsed" />
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding IsFolderSelected}" Value="True">
+                                                <Setter Property="Visibility" Value="Visible" />
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </StackPanel.Style>
+
+                                <Button Content="✏️ Renombrar"
+                                        Command="{Binding RenameFolderCommand}"
+                                        CommandParameter="{Binding SelectedFolder}"
+                                        Style="{StaticResource SecondaryButtonStyle}"
+                                        Padding="8,3"
+                                        FontSize="11"
+                                        Margin="0,0,4,0"
+                                        ToolTip="Renombrar esta carpeta (F2)" />
+
+                                <Button Content="➕ Subcarpeta"
+                                        Command="{Binding NewSubFolderCommand}"
+                                        CommandParameter="{Binding SelectedFolder}"
+                                        Style="{StaticResource SecondaryButtonStyle}"
+                                        Padding="8,3"
+                                        FontSize="11"
+                                        Margin="0,0,4,0"
+                                        ToolTip="Crear una subcarpeta dentro de esta carpeta" />
+
+                                <Button Content="🗑️ Eliminar"
+                                        Command="{Binding DeleteFolderCommand}"
+                                        CommandParameter="{Binding SelectedFolder}"
+                                        Style="{StaticResource DangerButtonStyle}"
+                                        Padding="8,3"
+                                        FontSize="11"
+                                        ToolTip="Eliminar esta carpeta (Supr)" />
+                            </StackPanel>
+                        </StackPanel>
                     </DockPanel>
 
                     <!-- Buscador en tiempo real (RF-15) -->

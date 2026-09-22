@@ -7,6 +7,7 @@ using AtajaMe.Application.Folders;
 using AtajaMe.Application.Services;
 using AtajaMe.Application.Snippets;
 using AtajaMe.UI.Common;
+using AtajaMe.UI.Services;
 
 namespace AtajaMe.UI.ViewModels;
 
@@ -40,6 +41,7 @@ public sealed class MainViewModel : ViewModelBase
 
     private readonly ICsvImportExportService _csvService;
     private readonly IKeyboardExpansionOrchestrator _orchestrator;
+    private readonly IFolderDialogService _folderDialogService;
 
     private NavigationSection _currentSection = NavigationSection.All;
     private FolderTreeItemViewModel? _selectedFolder;
@@ -68,6 +70,7 @@ public sealed class MainViewModel : ViewModelBase
                 OnPropertyChanged(nameof(IsFavoritesSelected));
                 OnPropertyChanged(nameof(IsRecentSelected));
                 OnPropertyChanged(nameof(IsTrashSelected));
+                OnPropertyChanged(nameof(IsFolderSelected));
                 OnPropertyChanged(nameof(CurrentSectionTitle));
                 ApplyFilter();
             }
@@ -78,6 +81,7 @@ public sealed class MainViewModel : ViewModelBase
     public bool IsFavoritesSelected => CurrentSection == NavigationSection.Favorites;
     public bool IsRecentSelected => CurrentSection == NavigationSection.Recent;
     public bool IsTrashSelected => CurrentSection == NavigationSection.Trash;
+    public bool IsFolderSelected => CurrentSection == NavigationSection.Folder;
 
     public string CurrentSectionTitle => CurrentSection switch
     {
@@ -104,6 +108,7 @@ public sealed class MainViewModel : ViewModelBase
                     OnPropertyChanged(nameof(IsFavoritesSelected));
                     OnPropertyChanged(nameof(IsRecentSelected));
                     OnPropertyChanged(nameof(IsTrashSelected));
+                    OnPropertyChanged(nameof(IsFolderSelected));
                     OnPropertyChanged(nameof(CurrentSectionTitle));
                     ApplyFilter();
                 }
@@ -224,7 +229,8 @@ public sealed class MainViewModel : ViewModelBase
         UpdateFolderUseCase updateFolderUseCase,
         DeleteFolderUseCase deleteFolderUseCase,
         ICsvImportExportService csvService,
-        IKeyboardExpansionOrchestrator orchestrator)
+        IKeyboardExpansionOrchestrator orchestrator,
+        IFolderDialogService? folderDialogService = null)
     {
         _getSnippetsUseCase = getSnippetsUseCase;
         _createSnippetUseCase = createSnippetUseCase;
@@ -243,6 +249,7 @@ public sealed class MainViewModel : ViewModelBase
         _csvService = csvService;
         _orchestrator = orchestrator;
         _isOrchestratorPaused = orchestrator.IsPaused;
+        _folderDialogService = folderDialogService ?? new FolderDialogService();
 
         SelectAllCommand = new RelayCommand(() => CurrentSection = NavigationSection.All);
         SelectFavoritesCommand = new RelayCommand(() => CurrentSection = NavigationSection.Favorites);
@@ -578,8 +585,25 @@ public sealed class MainViewModel : ViewModelBase
     {
         try
         {
-            var folder = await _createFolderUseCase.ExecuteAsync(new CreateFolderCommand("Nueva Carpeta"));
+            var folderName = await _folderDialogService.PromptFolderNameAsync(
+                "Nueva Carpeta",
+                "Introduce el nombre de la nueva carpeta:",
+                "Nueva Carpeta");
+
+            if (string.IsNullOrWhiteSpace(folderName))
+            {
+                return;
+            }
+
+            var folder = await _createFolderUseCase.ExecuteAsync(new CreateFolderCommand(folderName.Trim()));
             await LoadDataAsync();
+
+            var createdNode = FindFolderNodeRecursive(FolderTree, folder.Id);
+            if (createdNode != null)
+            {
+                SelectedFolder = createdNode;
+            }
+
             StatusMessage = $"Carpeta '{folder.Name}' creada";
         }
         catch (Exception ex)
@@ -604,8 +628,25 @@ public sealed class MainViewModel : ViewModelBase
 
         try
         {
-            var folder = await _createFolderUseCase.ExecuteAsync(new CreateFolderCommand("Nueva Subcarpeta", parentNode.Id));
+            var subFolderName = await _folderDialogService.PromptFolderNameAsync(
+                "Nueva Subcarpeta",
+                $"Introduce el nombre para la subcarpeta dentro de '{parentNode.Name}':",
+                "Subcarpeta");
+
+            if (string.IsNullOrWhiteSpace(subFolderName))
+            {
+                return;
+            }
+
+            var folder = await _createFolderUseCase.ExecuteAsync(new CreateFolderCommand(subFolderName.Trim(), parentNode.Id));
             await LoadDataAsync();
+
+            var createdNode = FindFolderNodeRecursive(FolderTree, folder.Id);
+            if (createdNode != null)
+            {
+                SelectedFolder = createdNode;
+            }
+
             StatusMessage = $"Subcarpeta '{folder.Name}' creada";
         }
         catch (Exception ex)
@@ -624,9 +665,26 @@ public sealed class MainViewModel : ViewModelBase
 
         try
         {
-            await _updateFolderUseCase.ExecuteAsync(new UpdateFolderCommand(node.Id, node.Name, node.ParentId, node.SortOrder));
+            var newName = await _folderDialogService.PromptFolderNameAsync(
+                "Renombrar Carpeta",
+                "Introduce el nuevo nombre para la carpeta:",
+                node.Name);
+
+            if (string.IsNullOrWhiteSpace(newName) || newName.Trim() == node.Name)
+            {
+                return;
+            }
+
+            await _updateFolderUseCase.ExecuteAsync(new UpdateFolderCommand(node.Id, newName.Trim(), node.ParentId, node.SortOrder));
             await LoadDataAsync();
-            StatusMessage = "Carpeta renombrada con éxito";
+
+            var updatedNode = FindFolderNodeRecursive(FolderTree, node.Id);
+            if (updatedNode != null)
+            {
+                SelectedFolder = updatedNode;
+            }
+
+            StatusMessage = $"Carpeta renombrada a '{newName.Trim()}'";
         }
         catch (Exception ex)
         {
@@ -644,6 +702,12 @@ public sealed class MainViewModel : ViewModelBase
 
         try
         {
+            bool confirmed = await _folderDialogService.ConfirmDeleteFolderAsync(node.Name, node.SnippetCount);
+            if (!confirmed)
+            {
+                return;
+            }
+
             await _deleteFolderUseCase.ExecuteAsync(node.Id);
             if (SelectedFolder?.Id == node.Id)
             {
@@ -651,12 +715,31 @@ public sealed class MainViewModel : ViewModelBase
                 CurrentSection = NavigationSection.All;
             }
             await LoadDataAsync();
-            StatusMessage = "Carpeta eliminada";
+            StatusMessage = $"Carpeta '{node.Name}' eliminada";
         }
         catch (Exception ex)
         {
             StatusMessage = $"Error al eliminar carpeta: {ex.Message}";
         }
+    }
+
+    private static FolderTreeItemViewModel? FindFolderNodeRecursive(IEnumerable<FolderTreeItemViewModel> nodes, Guid id)
+    {
+        foreach (var node in nodes)
+        {
+            if (node.Id == id)
+            {
+                return node;
+            }
+
+            var found = FindFolderNodeRecursive(node.Children, id);
+            if (found != null)
+            {
+                return found;
+            }
+        }
+
+        return null;
     }
 
     private void ExecuteTogglePause()

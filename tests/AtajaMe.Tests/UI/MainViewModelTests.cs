@@ -11,6 +11,8 @@ using AtajaMe.Domain.Enums;
 using AtajaMe.Domain.Repositories;
 using AtajaMe.Tests.Windows;
 using AtajaMe.UI.ViewModels;
+using AtajaMe.UI.Common;
+using AtajaMe.UI.Services;
 
 namespace AtajaMe.Tests.UI;
 
@@ -20,6 +22,7 @@ public sealed class MainViewModelTests
     private readonly FakeFolderRepository _folderRepo;
     private readonly FakeCsvService _csvService;
     private readonly FakeOrchestrator _orchestrator;
+    private readonly FakeFolderDialogService _folderDialog;
     private readonly MainViewModel _vm;
 
     public MainViewModelTests()
@@ -28,6 +31,7 @@ public sealed class MainViewModelTests
         _folderRepo = new FakeFolderRepository();
         _csvService = new FakeCsvService();
         _orchestrator = new FakeOrchestrator();
+        _folderDialog = new FakeFolderDialogService();
 
         var getSnippets = new GetSnippetsUseCase(_snippetRepo);
         var createSnippet = new CreateSnippetUseCase(_snippetRepo, _folderRepo);
@@ -57,7 +61,8 @@ public sealed class MainViewModelTests
             updateFolder,
             deleteFolder,
             _csvService,
-            _orchestrator);
+            _orchestrator,
+            _folderDialog);
     }
 
     [Fact]
@@ -190,7 +195,135 @@ public sealed class MainViewModelTests
         Assert.False(_orchestrator.IsPaused);
     }
 
+    [Fact]
+    public async Task NewFolderCommand_PromptsAndCreatesFolderWithCustomName()
+    {
+        // Arrange
+        _folderDialog.PromptResult = "Facturación";
+
+        // Act
+        await ((AsyncRelayCommand)_vm.NewFolderCommand).ExecuteAsync(null);
+
+        // Assert
+        var allFolders = await _folderRepo.GetAllAsync();
+        var created = allFolders.FirstOrDefault(f => f.Name == "Facturación");
+        Assert.NotNull(created);
+        Assert.Equal("Facturación", _vm.SelectedFolder?.Name);
+        Assert.Equal(NavigationSection.Folder, _vm.CurrentSection);
+    }
+
+    [Fact]
+    public async Task NewFolderCommand_WhenUserCancels_DoesNotCreateFolder()
+    {
+        // Arrange
+        _folderDialog.PromptResult = null; // Usuario pulsa Cancelar
+
+        // Act
+        await ((AsyncRelayCommand)_vm.NewFolderCommand).ExecuteAsync(null);
+
+        // Assert
+        var allFolders = await _folderRepo.GetAllAsync();
+        Assert.Empty(allFolders);
+    }
+
+    [Fact]
+    public async Task RenameFolderCommand_PromptsAndRenamesFolder()
+    {
+        // Arrange
+        var folder = Folder.Create("Original");
+        await _folderRepo.AddAsync(folder);
+        await _vm.LoadDataAsync();
+        var node = _vm.FolderTree.First(n => n.Id == folder.Id);
+        _vm.SelectedFolder = node;
+
+        _folderDialog.PromptResult = "Nuevo Nombre";
+
+        // Act
+        await ((AsyncRelayCommand)_vm.RenameFolderCommand).ExecuteAsync(node);
+
+        // Assert
+        var updated = await _folderRepo.GetByIdAsync(folder.Id);
+        Assert.Equal("Nuevo Nombre", updated?.Name);
+        Assert.Equal("Nuevo Nombre", _vm.SelectedFolder?.Name);
+    }
+
+    [Fact]
+    public async Task DeleteFolderCommand_WhenConfirmed_DeletesFolderAndNavigatesToAll()
+    {
+        // Arrange
+        var folder = Folder.Create("Por Borrar");
+        await _folderRepo.AddAsync(folder);
+        await _vm.LoadDataAsync();
+        var node = _vm.FolderTree.First(n => n.Id == folder.Id);
+        _vm.SelectedFolder = node;
+
+        _folderDialog.ConfirmDeleteResult = true;
+
+        // Act
+        await ((AsyncRelayCommand)_vm.DeleteFolderCommand).ExecuteAsync(node);
+
+        // Assert
+        var deleted = await _folderRepo.GetByIdAsync(folder.Id);
+        Assert.Null(deleted);
+        Assert.Null(_vm.SelectedFolder);
+        Assert.Equal(NavigationSection.All, _vm.CurrentSection);
+    }
+
+    [Fact]
+    public async Task DeleteFolderCommand_WhenCancelled_PreservesFolder()
+    {
+        // Arrange
+        var folder = Folder.Create("Conservar");
+        await _folderRepo.AddAsync(folder);
+        await _vm.LoadDataAsync();
+        var node = _vm.FolderTree.First(n => n.Id == folder.Id);
+        _vm.SelectedFolder = node;
+
+        _folderDialog.ConfirmDeleteResult = false;
+
+        // Act
+        await ((AsyncRelayCommand)_vm.DeleteFolderCommand).ExecuteAsync(node);
+
+        // Assert
+        var kept = await _folderRepo.GetByIdAsync(folder.Id);
+        Assert.NotNull(kept);
+        Assert.NotNull(_vm.SelectedFolder);
+    }
+
+    [Fact]
+    public async Task NewSubFolderCommand_CreatesSubFolderWithParentId()
+    {
+        // Arrange
+        var parent = Folder.Create("Padre");
+        await _folderRepo.AddAsync(parent);
+        await _vm.LoadDataAsync();
+        var parentNode = _vm.FolderTree.First(n => n.Id == parent.Id);
+
+        _folderDialog.PromptResult = "Hijo";
+
+        // Act
+        await ((AsyncRelayCommand)_vm.NewSubFolderCommand).ExecuteAsync(parentNode);
+
+        // Assert
+        var allFolders = await _folderRepo.GetAllAsync();
+        var subFolder = allFolders.FirstOrDefault(f => f.Name == "Hijo");
+        Assert.NotNull(subFolder);
+        Assert.Equal(parent.Id, subFolder.ParentId);
+    }
+
     #region Fakes
+
+    private sealed class FakeFolderDialogService : IFolderDialogService
+    {
+        public string? PromptResult { get; set; } = "Carpeta Test";
+        public bool ConfirmDeleteResult { get; set; } = true;
+
+        public Task<string?> PromptFolderNameAsync(string title, string prompt, string initialValue)
+            => Task.FromResult(PromptResult);
+
+        public Task<bool> ConfirmDeleteFolderAsync(string folderName, int snippetCount)
+            => Task.FromResult(ConfirmDeleteResult);
+    }
 
     private sealed class FakeFolderRepository : IFolderRepository
     {
@@ -209,7 +342,14 @@ public sealed class MainViewModelTests
         }
 
         public Task UpdateAsync(Folder folder, CancellationToken cancellationToken = default)
-            => Task.CompletedTask;
+        {
+            var idx = _folders.FindIndex(f => f.Id == folder.Id);
+            if (idx >= 0)
+            {
+                _folders[idx] = folder;
+            }
+            return Task.CompletedTask;
+        }
 
         public Task DeleteAsync(Guid id, CancellationToken cancellationToken = default)
         {
@@ -248,3 +388,4 @@ public sealed class MainViewModelTests
 
     #endregion
 }
+
