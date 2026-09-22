@@ -93,7 +93,31 @@ public partial class App : System.Windows.Application
 
     protected override async void OnStartup(StartupEventArgs e)
     {
+        // Ciclo de vida persistente en segundo plano (RF-34, RF-35)
+        ShutdownMode = ShutdownMode.OnExplicitShutdown;
         base.OnStartup(e);
+
+        DispatcherUnhandledException += (s, args) =>
+        {
+            try
+            {
+                var dir = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "AtajaMe");
+                Directory.CreateDirectory(dir);
+                File.AppendAllText(Path.Combine(dir, "crash.log"), $"[Dispatcher] {DateTime.Now}: {args.Exception}\n\n");
+            }
+            catch { }
+        };
+
+        AppDomain.CurrentDomain.UnhandledException += (s, args) =>
+        {
+            try
+            {
+                var dir = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "AtajaMe");
+                Directory.CreateDirectory(dir);
+                File.AppendAllText(Path.Combine(dir, "crash.log"), $"[AppDomain] {DateTime.Now}: {args.ExceptionObject}\n\n");
+            }
+            catch { }
+        };
 
         try
         {
@@ -210,6 +234,7 @@ public partial class App : System.Windows.Application
         _mainViewModel.RequestImportCsv += HandleImportCsv;
 
         _mainWindow = new MainWindow(_mainViewModel);
+        MainWindow = _mainWindow;
 
         // 12. Iniciar orquestador de teclado
         await _orchestrator.StartAsync();
