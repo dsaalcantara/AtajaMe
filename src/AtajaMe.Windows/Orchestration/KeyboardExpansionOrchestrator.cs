@@ -155,7 +155,7 @@ public sealed class KeyboardExpansionOrchestrator : IKeyboardExpansionOrchestrat
         }
 
         // Antes de expandir cualquier atajo, verificar que el foco no haya cambiado y que el objetivo sea seguro (RF-08)
-        if (_focusTracker.HasFocusChanged(activeWindow) || !await IsExecutionTargetAllowedAsync(cancellationToken))
+        if ((activeWindow != IntPtr.Zero && _focusTracker.HasFocusChanged(activeWindow)) || !await IsExecutionTargetAllowedAsync(cancellationToken))
         {
             _engine.ResetBuffer();
             return;
@@ -302,9 +302,24 @@ public sealed class KeyboardExpansionOrchestrator : IKeyboardExpansionOrchestrat
         try
         {
             var keyboardState = new byte[256];
-            if (!_win32.GetKeyboardState(keyboardState))
+            _win32.GetKeyboardState(keyboardState);
+
+            // Sincronizar modificadores físicos globales en worker threads (Shift para ':', AltGr para '@', etc.)
+            if ((_win32.GetAsyncKeyState(Win32Constants.VK_SHIFT) & 0x8000) != 0)
             {
-                return null;
+                keyboardState[Win32Constants.VK_SHIFT] = 0x80;
+            }
+            if ((_win32.GetAsyncKeyState(Win32Constants.VK_CONTROL) & 0x8000) != 0)
+            {
+                keyboardState[Win32Constants.VK_CONTROL] = 0x80;
+            }
+            if ((_win32.GetAsyncKeyState(Win32Constants.VK_MENU) & 0x8000) != 0)
+            {
+                keyboardState[Win32Constants.VK_MENU] = 0x80;
+            }
+            if ((_win32.GetKeyState(Win32Constants.VK_CAPITAL) & 0x0001) != 0)
+            {
+                keyboardState[Win32Constants.VK_CAPITAL] = 0x01;
             }
 
             var sb = new StringBuilder(4);
@@ -318,12 +333,16 @@ public sealed class KeyboardExpansionOrchestrator : IKeyboardExpansionOrchestrat
                 keyboardState,
                 sb,
                 sb.Capacity,
-                0,
+                4, // wFlags = 4: no alterar dead keys
                 hkl);
 
             if (res == 1)
             {
                 return sb[0];
+            }
+            if (res > 1 && sb.Length > 0)
+            {
+                return sb[sb.Length - 1];
             }
         }
         catch

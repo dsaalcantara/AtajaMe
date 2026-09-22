@@ -38,4 +38,8 @@ public interface IWin32Api
     bool ClientToScreen(IntPtr hWnd, ref POINT lpPoint);
 
     bool GetCursorPos(out POINT lpPoint);
+
+    short GetAsyncKeyState(int vKey);
+
+    short GetKeyState(int vKey);
 }

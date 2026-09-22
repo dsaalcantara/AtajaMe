@@ -85,8 +85,8 @@ public sealed class LowLevelKeyboardHook : IKeyboardHook
             {
                 var kbdStruct = Marshal.PtrToStructure<KBDLLHOOKSTRUCT>(lParam);
 
-                // Descartar inmediatamente eventos generados por nuestra propia inyección o flags de inyección Win32
-                if (kbdStruct.dwExtraInfo == Win32Constants.INJECTED_SIGNATURE || (kbdStruct.flags & 0x10) != 0)
+                // Descartar inmediatamente eventos generados por nuestra propia inyección
+                if (kbdStruct.dwExtraInfo == Win32Constants.INJECTED_SIGNATURE)
                 {
                     return CallNextSafe(nCode, wParam, lParam);
                 }

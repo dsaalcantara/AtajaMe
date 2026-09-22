@@ -115,6 +115,10 @@ public sealed class FakeWin32Api : IWin32Api
         return true;
     }
 
+    public short GetAsyncKeyState(int vKey) => 0;
+
+    public short GetKeyState(int vKey) => 0;
+
     /// <summary>
     /// Simula un evento de hook invocando el delegado registrado con una estructura KBDLLHOOKSTRUCT.
     /// </summary>

@@ -89,6 +89,16 @@ public sealed class NativeWin32Api : IWin32Api
         return GetCursorPosNative(out lpPoint);
     }
 
+    public short GetAsyncKeyState(int vKey)
+    {
+        return GetAsyncKeyStateNative(vKey);
+    }
+
+    public short GetKeyState(int vKey)
+    {
+        return GetKeyStateNative(vKey);
+    }
+
     #region P/Invoke Definitions
 
     [DllImport("user32.dll", EntryPoint = "SetWindowsHookExW", SetLastError = true, CharSet = CharSet.Auto)]
@@ -154,6 +164,12 @@ public sealed class NativeWin32Api : IWin32Api
 
     [DllImport("kernel32.dll", EntryPoint = "GetModuleHandleW", CharSet = CharSet.Unicode, SetLastError = true)]
     private static extern IntPtr GetModuleHandle(string? lpModuleName);
+
+    [DllImport("user32.dll", EntryPoint = "GetAsyncKeyState")]
+    private static extern short GetAsyncKeyStateNative(int vKey);
+
+    [DllImport("user32.dll", EntryPoint = "GetKeyState")]
+    private static extern short GetKeyStateNative(int vKey);
 
     #endregion
 }
