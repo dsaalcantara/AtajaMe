@@ -94,6 +94,7 @@ public sealed class WindowsTextInjectorTests
         Assert.Empty(_fakeWin32.SentInputs);
     }
 
+
     [Fact]
     public void InputStruct_In64BitProcess_HasCorrectSizeAndOffset()
     {
