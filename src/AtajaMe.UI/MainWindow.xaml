@@ -107,12 +107,14 @@
                                     HorizontalContentAlignment="Stretch"
                                     BorderThickness="0"
                                     Margin="0,1">
-                                <DockPanel>
+                                <DockPanel LastChildFill="True">
+                                    <TextBlock Text="{Binding AllCount, StringFormat='({0})'}"
+                                               DockPanel.Dock="Right"
+                                               Foreground="{DynamicResource TextMutedBrush}"
+                                               FontSize="11"
+                                               VerticalAlignment="Center"
+                                               Margin="8,0,0,0" />
                                     <TextBlock Text="📋 Todos los atajos" VerticalAlignment="Center" />
-                                    <TextBlock Text="{Binding AllCount}"
-                                               HorizontalAlignment="Right"
-                                               Foreground="{DynamicResource TextSecondaryBrush}"
-                                               FontSize="11" />
                                 </DockPanel>
                             </Button>
 
@@ -122,12 +124,14 @@
                                     HorizontalContentAlignment="Stretch"
                                     BorderThickness="0"
                                     Margin="0,1">
-                                <DockPanel>
+                                <DockPanel LastChildFill="True">
+                                    <TextBlock Text="{Binding FavoritesCount, StringFormat='({0})'}"
+                                               DockPanel.Dock="Right"
+                                               Foreground="{DynamicResource TextMutedBrush}"
+                                               FontSize="11"
+                                               VerticalAlignment="Center"
+                                               Margin="8,0,0,0" />
                                     <TextBlock Text="⭐ Favoritos" VerticalAlignment="Center" />
-                                    <TextBlock Text="{Binding FavoritesCount}"
-                                               HorizontalAlignment="Right"
-                                               Foreground="{DynamicResource TextSecondaryBrush}"
-                                               FontSize="11" />
                                 </DockPanel>
                             </Button>
 
@@ -137,12 +141,14 @@
                                     HorizontalContentAlignment="Stretch"
                                     BorderThickness="0"
                                     Margin="0,1">
-                                <DockPanel>
+                                <DockPanel LastChildFill="True">
+                                    <TextBlock Text="{Binding RecentCount, StringFormat='({0})'}"
+                                               DockPanel.Dock="Right"
+                                               Foreground="{DynamicResource TextMutedBrush}"
+                                               FontSize="11"
+                                               VerticalAlignment="Center"
+                                               Margin="8,0,0,0" />
                                     <TextBlock Text="🕒 Recientes" VerticalAlignment="Center" />
-                                    <TextBlock Text="{Binding RecentCount}"
-                                               HorizontalAlignment="Right"
-                                               Foreground="{DynamicResource TextSecondaryBrush}"
-                                               FontSize="11" />
                                 </DockPanel>
                             </Button>
 
@@ -152,12 +158,14 @@
                                     HorizontalContentAlignment="Stretch"
                                     BorderThickness="0"
                                     Margin="0,1">
-                                <DockPanel>
+                                <DockPanel LastChildFill="True">
+                                    <TextBlock Text="{Binding TrashCount, StringFormat='({0})'}"
+                                               DockPanel.Dock="Right"
+                                               Foreground="{DynamicResource TextMutedBrush}"
+                                               FontSize="11"
+                                               VerticalAlignment="Center"
+                                               Margin="8,0,0,0" />
                                     <TextBlock Text="🗑 Papelera" VerticalAlignment="Center" />
-                                    <TextBlock Text="{Binding TrashCount}"
-                                               HorizontalAlignment="Right"
-                                               Foreground="{DynamicResource TextSecondaryBrush}"
-                                               FontSize="11" />
                                 </DockPanel>
                             </Button>
 
