@@ -458,11 +458,10 @@
             <!-- ============================================== -->
             <Grid Grid.Column="3" Background="{DynamicResource BgPrimaryBrush}">
                 <!-- Estado Vacío (si no hay atajo en edición) -->
-                <StackPanel VerticalAlignment="Center"
-                            HorizontalAlignment="Center"
-                            Margin="32">
-                    <StackPanel.Style>
-                        <Style TargetType="StackPanel">
+                <ScrollViewer HorizontalScrollBarVisibility="Disabled"
+                              VerticalScrollBarVisibility="Auto">
+                    <ScrollViewer.Style>
+                        <Style TargetType="ScrollViewer">
                             <Setter Property="Visibility" Value="Collapsed" />
                             <Style.Triggers>
                                 <DataTrigger Binding="{Binding Editor.IsVisible}" Value="False">
@@ -470,25 +469,27 @@
                                 </DataTrigger>
                             </Style.Triggers>
                         </Style>
-                    </StackPanel.Style>
-                    <TextBlock Text="⚡" FontSize="48" HorizontalAlignment="Center" Margin="0,0,0,12" />
-                    <TextBlock Text="Ningún atajo seleccionado"
-                               FontWeight="Bold"
-                               FontSize="16"
-                               HorizontalAlignment="Center"
-                               Foreground="{DynamicResource TextPrimaryBrush}" />
-                    <TextBlock Text="Selecciona un atajo de la lista para editarlo o pulsa Ctrl+N para crear uno nuevo."
-                               FontSize="13"
-                               Foreground="{DynamicResource TextSecondaryBrush}"
-                               TextWrapping="Wrap"
-                               TextAlignment="Center"
-                               MaxWidth="300"
-                               Margin="0,8,0,16" />
-                    <Button Content="+ Crear Nuevo Atajo"
-                            Command="{Binding NewSnippetCommand}"
-                            Style="{StaticResource AccentButtonStyle}"
-                            HorizontalAlignment="Center" />
-                </StackPanel>
+                    </ScrollViewer.Style>
+
+                    <Grid VerticalAlignment="Center" HorizontalAlignment="Stretch" Margin="20,16">
+                        <StackPanel HorizontalAlignment="Center" MaxWidth="320">
+                            <TextBlock Text="⚡" FontSize="44" HorizontalAlignment="Center" Margin="0,0,0,12" />
+                            <TextBlock Text="Ningún atajo seleccionado"
+                                       FontWeight="Bold"
+                                       FontSize="16"
+                                       HorizontalAlignment="Center"
+                                       TextAlignment="Center"
+                                       TextWrapping="Wrap"
+                                       Foreground="{DynamicResource TextPrimaryBrush}"
+                                       Margin="0,0,0,8" />
+                            <TextBlock Text="Selecciona un atajo de la lista para editarlo o pulsa Ctrl+N para crear uno nuevo."
+                                       FontSize="13"
+                                       Foreground="{DynamicResource TextSecondaryBrush}"
+                                       TextWrapping="Wrap"
+                                       TextAlignment="Center" />
+                        </StackPanel>
+                    </Grid>
+                </ScrollViewer>
 
                 <!-- Panel Editor Activo -->
                 <ScrollViewer VerticalScrollBarVisibility="Auto">
