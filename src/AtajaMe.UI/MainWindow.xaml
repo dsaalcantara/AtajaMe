@@ -235,8 +235,8 @@
             <!-- ============================================== -->
             <Grid Grid.Column="1" Background="{DynamicResource BgSecondaryBrush}">
                 <DockPanel Margin="12,16,12,12">
-                    <!-- Cabecera Superior: Título y Nuevo Atajo -->
-                    <DockPanel DockPanel.Dock="Top" Margin="0,0,0,10">
+                    <!-- Cabecera Superior: Título a la izquierda, Nuevo Atajo a la derecha -->
+                    <DockPanel DockPanel.Dock="Top" Margin="0,0,0,8">
                         <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
                             <!-- Botón Vaciar Papelera si está en papelera -->
                             <Button Content="Vaciar Papelera"
@@ -260,54 +260,54 @@
                                     ToolTip="Crear un nuevo atajo (Ctrl+N)" />
                         </StackPanel>
                         
-                        <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                            <TextBlock Text="{Binding CurrentSectionTitle}"
-                                       FontWeight="Bold"
-                                       FontSize="16"
-                                       VerticalAlignment="Center"
-                                       TextTrimming="CharacterEllipsis" />
-
-                            <!-- Acciones directas para la carpeta seleccionada -->
-                            <StackPanel Orientation="Horizontal" Margin="12,0,0,0">
-                                <StackPanel.Style>
-                                    <Style TargetType="StackPanel">
-                                        <Setter Property="Visibility" Value="Collapsed" />
-                                        <Style.Triggers>
-                                            <DataTrigger Binding="{Binding IsFolderSelected}" Value="True">
-                                                <Setter Property="Visibility" Value="Visible" />
-                                            </DataTrigger>
-                                        </Style.Triggers>
-                                    </Style>
-                                </StackPanel.Style>
-
-                                <Button Content="✏️ Renombrar"
-                                        Command="{Binding RenameFolderCommand}"
-                                        CommandParameter="{Binding SelectedFolder}"
-                                        Style="{StaticResource SecondaryButtonStyle}"
-                                        Padding="8,3"
-                                        FontSize="11"
-                                        Margin="0,0,4,0"
-                                        ToolTip="Renombrar esta carpeta (F2)" />
-
-                                <Button Content="➕ Subcarpeta"
-                                        Command="{Binding NewSubFolderCommand}"
-                                        CommandParameter="{Binding SelectedFolder}"
-                                        Style="{StaticResource SecondaryButtonStyle}"
-                                        Padding="8,3"
-                                        FontSize="11"
-                                        Margin="0,0,4,0"
-                                        ToolTip="Crear una subcarpeta dentro de esta carpeta" />
-
-                                <Button Content="🗑️ Eliminar"
-                                        Command="{Binding DeleteFolderCommand}"
-                                        CommandParameter="{Binding SelectedFolder}"
-                                        Style="{StaticResource DangerButtonStyle}"
-                                        Padding="8,3"
-                                        FontSize="11"
-                                        ToolTip="Eliminar esta carpeta (Supr)" />
-                            </StackPanel>
-                        </StackPanel>
+                        <TextBlock Text="{Binding CurrentSectionTitle}"
+                                   FontWeight="Bold"
+                                   FontSize="16"
+                                   VerticalAlignment="Center"
+                                   Margin="0,0,8,0"
+                                   TextTrimming="CharacterEllipsis" />
                     </DockPanel>
+
+                    <!-- Barra de herramientas de Carpeta (solo visible al seleccionar una carpeta, responsiva con WrapPanel) -->
+                    <WrapPanel DockPanel.Dock="Top" Margin="0,0,0,8">
+                        <WrapPanel.Style>
+                            <Style TargetType="WrapPanel">
+                                <Setter Property="Visibility" Value="Collapsed" />
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding IsFolderSelected}" Value="True">
+                                        <Setter Property="Visibility" Value="Visible" />
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </WrapPanel.Style>
+
+                        <Button Content="✏️ Renombrar"
+                                Command="{Binding RenameFolderCommand}"
+                                CommandParameter="{Binding SelectedFolder}"
+                                Style="{StaticResource SecondaryButtonStyle}"
+                                Padding="8,3"
+                                FontSize="11"
+                                Margin="0,0,6,4"
+                                ToolTip="Renombrar esta carpeta (F2)" />
+
+                        <Button Content="➕ Subcarpeta"
+                                Command="{Binding NewSubFolderCommand}"
+                                CommandParameter="{Binding SelectedFolder}"
+                                Style="{StaticResource SecondaryButtonStyle}"
+                                Padding="8,3"
+                                FontSize="11"
+                                Margin="0,0,6,4"
+                                ToolTip="Crear una subcarpeta dentro de esta carpeta" />
+
+                        <Button Content="🗑️ Eliminar"
+                                Command="{Binding DeleteFolderCommand}"
+                                CommandParameter="{Binding SelectedFolder}"
+                                Style="{StaticResource DangerButtonStyle}"
+                                Padding="8,3"
+                                FontSize="11"
+                                Margin="0,0,0,4"
+                                ToolTip="Eliminar esta carpeta (Supr)" />
+                    </WrapPanel>
 
                     <!-- Buscador en tiempo real (RF-15) -->
                     <Border DockPanel.Dock="Top" Margin="0,0,0,10">
