@@ -204,6 +204,18 @@ public partial class App : System.Windows.Application
         var settings = await _appSettingsService.GetSettingsAsync();
         _themeService.ApplyTheme(settings.Theme);
 
+        // Registro de tema nativo de ventana para cualquier ventana que se cargue (RF-38)
+        EventManager.RegisterClassHandler(
+            typeof(Window),
+            FrameworkElement.LoadedEvent,
+            new RoutedEventHandler((s, _) =>
+            {
+                if (s is Window w && _themeService != null)
+                {
+                    Common.WindowThemeHelper.ApplyDarkTitleBar(w, _themeService.IsDarkActive);
+                }
+            }));
+
         // 10. Bandeja del Sistema (System Tray)
         _trayIconService = new TrayIconService(
             _orchestrator,
@@ -235,6 +247,7 @@ public partial class App : System.Windows.Application
 
         _mainWindow = new MainWindow(_mainViewModel);
         MainWindow = _mainWindow;
+        Common.WindowThemeHelper.ApplyDarkTitleBar(_mainWindow, _themeService.IsDarkActive);
 
         // 12. Iniciar orquestador de teclado
         await _orchestrator.StartAsync();

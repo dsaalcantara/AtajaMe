@@ -96,5 +96,11 @@ public sealed class ThemeService : IThemeService
         }
 
         app.Resources.MergedDictionaries.Insert(0, new System.Windows.ResourceDictionary { Source = themeUri });
+
+        // Actualizar barra de título nativa DWM en todas las ventanas activas
+        foreach (System.Windows.Window window in app.Windows)
+        {
+            Common.WindowThemeHelper.ApplyDarkTitleBar(window, isDark);
+        }
     }
 }

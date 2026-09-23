@@ -193,7 +193,7 @@
                                       SelectedItemChanged="OnFolderTreeSelectedItemChanged"
                                       KeyDown="OnFolderTreeKeyDown">
                                 <TreeView.ItemContainerStyle>
-                                    <Style TargetType="{x:Type TreeViewItem}">
+                                    <Style TargetType="{x:Type TreeViewItem}" BasedOn="{StaticResource {x:Type TreeViewItem}}">
                                         <Setter Property="IsExpanded" Value="{Binding IsExpanded, Mode=TwoWay}" />
                                         <Setter Property="IsSelected" Value="{Binding IsSelected, Mode=TwoWay}" />
                                         <Setter Property="Tag" Value="{Binding DataContext, RelativeSource={RelativeSource AncestorType=TreeView}}" />
@@ -522,7 +522,8 @@
                         <DockPanel Margin="0,0,0,12">
                             <TextBlock FontWeight="Bold" FontSize="16" VerticalAlignment="Center">
                                 <TextBlock.Style>
-                                    <Style TargetType="TextBlock">
+                                    <Style TargetType="TextBlock" BasedOn="{StaticResource {x:Type TextBlock}}">
+                                        <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}" />
                                         <Setter Property="Text" Value="Editar Atajo" />
                                         <Style.Triggers>
                                             <DataTrigger Binding="{Binding Editor.IsNew}" Value="True">
