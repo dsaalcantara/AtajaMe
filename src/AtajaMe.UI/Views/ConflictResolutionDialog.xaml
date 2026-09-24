@@ -6,6 +6,7 @@
         xmlns:vm="clr-namespace:AtajaMe.UI.ViewModels"
         mc:Ignorable="d"
         Title="AtajaMe · Resolución de Conflictos de Sincronización"
+        Icon="pack://application:,,,/Assets/app.ico"
         Height="540" Width="820"
         MinHeight="450" MinWidth="680"
         WindowStartupLocation="CenterOwner"
@@ -21,7 +22,7 @@
 
         <!-- Cabecera -->
         <StackPanel Grid.Row="0" Margin="0,0,0,12">
-            <TextBlock Text="⚠️ Discrepancia detectada en la sincronización (RF-24)"
+            <TextBlock Text="⚠️ Discrepancia detectada en la sincronización"
                        FontWeight="Bold"
                        FontSize="16"
                        Foreground="{DynamicResource WarningBrush}" />

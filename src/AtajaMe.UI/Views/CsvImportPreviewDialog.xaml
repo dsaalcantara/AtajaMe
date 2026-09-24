@@ -7,6 +7,7 @@
         xmlns:enums="clr-namespace:AtajaMe.Domain.Enums;assembly=AtajaMe.Domain"
         mc:Ignorable="d"
         Title="AtajaMe · Vista Previa de Importación CSV"
+        Icon="pack://application:,,,/Assets/app.ico"
         Height="480" Width="640"
         MinHeight="400" MinWidth="520"
         WindowStartupLocation="CenterOwner"
@@ -21,7 +22,7 @@
 
         <!-- Cabecera -->
         <StackPanel Grid.Row="0" Margin="0,0,0,12">
-            <TextBlock Text="📥 Vista Previa de Importación CSV (RF-26)"
+            <TextBlock Text="📥 Vista Previa de Importación CSV"
                        FontWeight="Bold"
                        FontSize="16" />
             <DockPanel Margin="0,6,0,0">

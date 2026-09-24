@@ -204,15 +204,31 @@ public partial class App : System.Windows.Application
         var settings = await _appSettingsService.GetSettingsAsync();
         _themeService.ApplyTheme(settings.Theme);
 
-        // Registro de tema nativo de ventana para cualquier ventana que se cargue (RF-38)
+        // Registro de icono y tema nativo de ventana para cualquier ventana que se cargue
         EventManager.RegisterClassHandler(
             typeof(Window),
             FrameworkElement.LoadedEvent,
             new RoutedEventHandler((s, _) =>
             {
-                if (s is Window w && _themeService != null)
+                if (s is Window w)
                 {
-                    Common.WindowThemeHelper.ApplyDarkTitleBar(w, _themeService.IsDarkActive);
+                    if (w.Icon == null)
+                    {
+                        try
+                        {
+                            w.Icon = System.Windows.Media.Imaging.BitmapFrame.Create(
+                                new Uri("pack://application:,,,/Assets/app.ico", UriKind.Absolute));
+                        }
+                        catch
+                        {
+                            // Fallback silencioso si no se localiza el recurso
+                        }
+                    }
+
+                    if (_themeService != null)
+                    {
+                        Common.WindowThemeHelper.ApplyDarkTitleBar(w, _themeService.IsDarkActive);
+                    }
                 }
             }));
 

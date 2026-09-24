@@ -6,6 +6,7 @@
         xmlns:vm="clr-namespace:AtajaMe.UI.ViewModels"
         mc:Ignorable="d"
         Title="AtajaMe · Configuración"
+        Icon="pack://application:,,,/Assets/app.ico"
         Height="520" Width="680"
         MinHeight="450" MinWidth="580"
         WindowStartupLocation="CenterOwner"
@@ -22,7 +23,7 @@
             <TabItem Header="General">
                 <ScrollViewer VerticalScrollBarVisibility="Auto" Margin="12">
                     <StackPanel>
-                        <TextBlock Text="Inicio del Sistema (RF-33)" FontWeight="Bold" FontSize="14" Margin="0,0,0,10" />
+                        <TextBlock Text="Inicio del Sistema" FontWeight="Bold" FontSize="14" Margin="0,0,0,10" />
                         <CheckBox Content="Iniciar AtajaMe automáticamente al encender Windows"
                                   IsChecked="{Binding StartWithWindows}"
                                   Margin="0,0,0,8" />
@@ -32,7 +33,7 @@
 
                         <Separator Background="{DynamicResource BorderSubtleBrush}" Margin="0,0,0,16" />
 
-                        <TextBlock Text="Biblioteca y Retención (RF-17, RF-18)" FontWeight="Bold" FontSize="14" Margin="0,0,0,10" />
+                        <TextBlock Text="Biblioteca y Retención" FontWeight="Bold" FontSize="14" Margin="0,0,0,10" />
                         <TextBlock Text="Límite de atajos recientes a mostrar:" FontSize="12" Margin="0,0,0,4" />
                         <TextBox Text="{Binding RecentSnippetsLimit, UpdateSourceTrigger=PropertyChanged}" Width="80" HorizontalAlignment="Left" Margin="0,0,0,12" />
 
@@ -46,7 +47,7 @@
             <TabItem Header="Sincronización">
                 <ScrollViewer VerticalScrollBarVisibility="Auto" Margin="12">
                     <StackPanel>
-                        <TextBlock Text="Sincronización sin Servidor Central (RF-20 a RF-24)" FontWeight="Bold" FontSize="14" Margin="0,0,0,8" />
+                        <TextBlock Text="Sincronización sin Servidor Central" FontWeight="Bold" FontSize="14" Margin="0,0,0,8" />
                         <TextBlock Text="Sincroniza tus atajos a través de una carpeta compartida en la nube (Google Drive, OneDrive o Dropbox)."
                                    FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,0,0,12" TextWrapping="Wrap" />
 
@@ -75,7 +76,7 @@
                                     <Style TargetType="Button" BasedOn="{StaticResource DangerButtonStyle}">
                                         <Setter Property="Visibility" Value="Collapsed" />
                                         <Style.Triggers>
-                                            <DataTrigger Binding="{Binding HasPendingConflicts}" Value="True">
+                                             <DataTrigger Binding="{Binding HasPendingConflicts}" Value="True">
                                                 <Setter Property="Visibility" Value="Visible" />
                                             </DataTrigger>
                                         </Style.Triggers>
@@ -91,7 +92,7 @@
             <TabItem Header="Copias de Seguridad">
                 <DockPanel Margin="12">
                     <StackPanel DockPanel.Dock="Top" Margin="0,0,0,12">
-                        <TextBlock Text="Copias de Seguridad Locales (RF-28 a RF-32)" FontWeight="Bold" FontSize="14" Margin="0,0,0,6" />
+                        <TextBlock Text="Copias de Seguridad Locales" FontWeight="Bold" FontSize="14" Margin="0,0,0,6" />
                         <TextBlock Text="Respaldos automáticos con la API de backup de SQLite y rotación continua."
                                    FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,0,0,10" />
 
@@ -133,7 +134,7 @@
             <TabItem Header="Aplicaciones Excluidas">
                 <DockPanel Margin="12">
                     <StackPanel DockPanel.Dock="Top" Margin="0,0,0,12">
-                        <TextBlock Text="Exclusiones de Expansión (RF-07)" FontWeight="Bold" FontSize="14" Margin="0,0,0,6" />
+                        <TextBlock Text="Exclusiones de Expansión" FontWeight="Bold" FontSize="14" Margin="0,0,0,6" />
                         <TextBlock Text="AtajaMe no expandirá atajos en las aplicaciones añadidas a esta lista."
                                    FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,0,0,10" />
 
@@ -173,7 +174,7 @@
             <TabItem Header="Apariencia">
                 <ScrollViewer VerticalScrollBarVisibility="Auto" Margin="12">
                     <StackPanel>
-                        <TextBlock Text="Tema Visual (RF-38)" FontWeight="Bold" FontSize="14" Margin="0,0,0,8" />
+                        <TextBlock Text="Tema Visual" FontWeight="Bold" FontSize="14" Margin="0,0,0,8" />
                         <TextBlock Text="Selecciona el tema de la aplicación o permite que se adapte al sistema operativo."
                                    FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,0,0,12" />
 
@@ -194,11 +195,18 @@
             <TabItem Header="Acerca de y Privacidad">
                 <ScrollViewer VerticalScrollBarVisibility="Auto" Margin="12">
                     <StackPanel>
-                        <TextBlock Text="⚡ AtajaMe · Versión 1.0 (MVP)" FontWeight="Bold" FontSize="15" Margin="0,0,0,8" />
+                        <StackPanel Orientation="Horizontal" Margin="0,0,0,8" VerticalAlignment="Center">
+                            <Image Source="pack://application:,,,/Assets/app.png"
+                                   Width="22" Height="22"
+                                   Margin="0,0,8,0"
+                                   VerticalAlignment="Center"
+                                   RenderOptions.BitmapScalingMode="HighQuality" />
+                            <TextBlock Text="AtajaMe · Versión 1.0 (MVP)" FontWeight="Bold" FontSize="15" VerticalAlignment="Center" />
+                        </StackPanel>
                         <TextBlock Text="Gestor de atajos y expansión de texto instantáneo para Windows."
                                    FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,0,0,16" />
 
-                        <TextBlock Text="🔒 Privacidad Estricta (RF-08 y RF-46)" FontWeight="Bold" FontSize="13" Margin="0,0,0,4" />
+                        <TextBlock Text="🔒 Privacidad Estricta" FontWeight="Bold" FontSize="13" Margin="0,0,0,4" />
                         <TextBlock Text="• El búfer de teclado es circular y 100% efímero en memoria (máx. 50 caracteres).&#x0a;• Se purga automáticamente tras 5 segundos de inactividad, cambio de foco o pérdida de coincidencia.&#x0a;• Cero pulsaciones tecleadas ni textos expandidos se guardan en disco ni logs.&#x0a;• Los campos de contraseña son detectados por UI Automation cancelando la captura de inmediato.&#x0a;• Cero telemetría: tus atajos y datos nunca salen de tu ordenador salvo la carpeta que tú configures."
                                    FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}" TextWrapping="Wrap" LineHeight="18" Margin="0,0,0,16" />
 

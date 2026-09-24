@@ -47,8 +47,22 @@ public sealed class TrayIconService : ITrayIconService
 
     public void Initialize()
     {
-        _activeIcon = CreateGeneratedIcon(Color.FromArgb(37, 99, 235), "A", isPaused: false);
-        _pausedIcon = CreateGeneratedIcon(Color.FromArgb(217, 119, 6), "⏸", isPaused: true);
+        try
+        {
+            var streamInfo = System.Windows.Application.GetResourceStream(new Uri("pack://application:,,,/Assets/app.ico"));
+            if (streamInfo != null)
+            {
+                using var stream = streamInfo.Stream;
+                _activeIcon = new Icon(stream, new Size(32, 32));
+            }
+        }
+        catch
+        {
+            _activeIcon = null;
+        }
+
+        _activeIcon ??= CreateGeneratedIcon(Color.FromArgb(37, 99, 235), "A", isPaused: false);
+        _pausedIcon = CreatePausedIcon(_activeIcon);
 
         _contextMenu = new ContextMenuStrip();
 
@@ -162,6 +176,32 @@ public sealed class TrayIconService : ITrayIconService
         IntPtr hIcon = bitmap.GetHicon();
         var icon = Icon.FromHandle(hIcon);
         // Creamos una copia desacoplada del handle
+        return (Icon)icon.Clone();
+    }
+
+    private static Icon CreatePausedIcon(Icon baseIcon)
+    {
+        using var bmp = new Bitmap(32, 32);
+        using (var g = Graphics.FromImage(bmp))
+        {
+            g.SmoothingMode = SmoothingMode.HighQuality;
+            g.InterpolationMode = InterpolationMode.HighQualityBicubic;
+            g.DrawIcon(baseIcon, new Rectangle(0, 0, 32, 32));
+
+            // Dibujar badge circular naranja/ámbar de pausa en la esquina inferior derecha
+            using var badgeBrush = new SolidBrush(Color.FromArgb(217, 119, 6));
+            g.FillEllipse(badgeBrush, 16, 16, 15, 15);
+            using var pen = new Pen(Color.White, 1.2f);
+            g.DrawEllipse(pen, 16, 16, 15, 15);
+
+            // Barras verticales de pausa
+            using var barBrush = new SolidBrush(Color.White);
+            g.FillRectangle(barBrush, 20, 20, 2, 7);
+            g.FillRectangle(barBrush, 24, 20, 2, 7);
+        }
+
+        IntPtr hIcon = bmp.GetHicon();
+        var icon = Icon.FromHandle(hIcon);
         return (Icon)icon.Clone();
     }
 

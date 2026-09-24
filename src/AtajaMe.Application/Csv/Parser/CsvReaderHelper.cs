@@ -154,6 +154,18 @@ public static class CsvReaderHelper
             return defaultValue;
         }
 
+        string GetValueAny(string[] columnNames, string defaultValue = "")
+        {
+            foreach (var col in columnNames)
+            {
+                if (map.TryGetValue(col, out int index) && index < tokens.Count && !string.IsNullOrEmpty(tokens[index]))
+                {
+                    return tokens[index];
+                }
+            }
+            return defaultValue;
+        }
+
         bool GetBool(string columnName, bool defaultValue = false)
         {
             var val = GetValue(columnName, string.Empty).Trim();
@@ -174,10 +186,10 @@ public static class CsvReaderHelper
             return int.TryParse(val, out int parsed) ? parsed : defaultValue;
         }
 
-        string code = GetValue("Code");
-        string name = GetValue("Name");
-        string content = GetValue("Content");
-        string folderPath = GetValue("FolderPath");
+        string code = GetValueAny(new[] { "Code", "Shortcut", "Autotext", "Trigger", "Abbreviation", "Atajo", "Código" });
+        string name = GetValueAny(new[] { "Name", "Description", "Title", "Nombre", "Descripción" });
+        string content = GetValueAny(new[] { "Content", "Phrase", "Text", "Body", "Snippet", "Contenido", "Texto" });
+        string folderPath = GetValueAny(new[] { "FolderPath", "Folder", "Category", "Carpeta", "Categoría" });
         bool caseSensitive = GetBool("CaseSensitive", false);
         bool isActive = GetBool("IsActive", true);
         bool isFavorite = GetBool("IsFavorite", false);

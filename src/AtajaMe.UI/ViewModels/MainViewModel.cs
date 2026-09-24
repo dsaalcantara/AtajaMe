@@ -622,7 +622,7 @@ public sealed class MainViewModel : ViewModelBase
 
         if (parentNode.Level >= 3)
         {
-            StatusMessage = "No se pueden crear más de 3 niveles de carpetas (RF-13).";
+            StatusMessage = "No se pueden crear más de 3 niveles de carpetas.";
             return;
         }
 

@@ -5,6 +5,7 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         mc:Ignorable="d"
         Title="{Binding DialogTitle}"
+        Icon="pack://application:,,,/Assets/app.ico"
         Width="440" Height="230"
         MinWidth="380" MinHeight="210"
         WindowStartupLocation="CenterOwner"
