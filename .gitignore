@@ -25,6 +25,7 @@ bld/
 [Ll]ogs/
 [Tt]est[Rr]esults/
 publish/
+installer/output/
 
 
 ## SQLite & Local databases
@@ -35,6 +36,12 @@ publish/
 *.sqlite3
 data/
 *.local.db
+
+## PhraseExpress & import files
+import/
+*.pexdb
+*.pxp
+*.bak
 
 ## OS generated files
 Thumbs.db

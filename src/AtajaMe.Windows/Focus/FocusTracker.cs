@@ -58,4 +58,21 @@ public sealed class FocusTracker : IFocusTracker
         var currentWindow = GetActiveWindowHandle();
         return currentWindow != originalWindowHandle;
     }
+
+    public bool IsCurrentAppActive()
+    {
+        var hWnd = GetActiveWindowHandle();
+        if (hWnd == IntPtr.Zero)
+        {
+            return false;
+        }
+
+        _win32.GetWindowThreadProcessId(hWnd, out uint processId);
+        if (processId == 0)
+        {
+            return false;
+        }
+
+        return processId == (uint)Environment.ProcessId;
+    }
 }

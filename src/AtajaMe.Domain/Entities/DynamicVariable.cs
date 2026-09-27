@@ -9,7 +9,7 @@ namespace AtajaMe.Domain.Entities;
 public sealed class DynamicVariable
 {
     private static readonly Regex VariableRegex = new(
-        @"\{(date|fecha|time|hora|datetime|fechahora|cursor|input:([^}]+)|([^}:|]+(?:\|[^}]+)?))\}",
+        @"\{(date|fecha|time|hora|datetime|fechahora|cursor|cw|semana|week)(?::([^}]+))?\}|\{(?:input:([^}]+)|(?!(?:date|fecha|time|hora|datetime|fechahora|cursor|cw|semana|week)(?:[:\}]))([^}:|]+(?:\|[^}]+)?))\}",
         RegexOptions.Compiled | RegexOptions.IgnoreCase);
 
     public VariableType Type { get; }
@@ -45,15 +45,27 @@ public sealed class DynamicVariable
 
             if (identifier is "date" or "fecha")
             {
-                variables.Add(new DynamicVariable(VariableType.SystemDate, rawTag, "Fecha"));
+                var format = match.Groups[2].Success ? match.Groups[2].Value.Trim() : null;
+                var displayName = string.IsNullOrEmpty(format) ? "Fecha" : $"Fecha ({format})";
+                variables.Add(new DynamicVariable(VariableType.SystemDate, rawTag, displayName));
             }
             else if (identifier is "time" or "hora")
             {
-                variables.Add(new DynamicVariable(VariableType.SystemTime, rawTag, "Hora"));
+                var format = match.Groups[2].Success ? match.Groups[2].Value.Trim() : null;
+                var displayName = string.IsNullOrEmpty(format) ? "Hora" : $"Hora ({format})";
+                variables.Add(new DynamicVariable(VariableType.SystemTime, rawTag, displayName));
             }
             else if (identifier is "datetime" or "fechahora")
             {
-                variables.Add(new DynamicVariable(VariableType.SystemDateTime, rawTag, "Fecha y Hora"));
+                var format = match.Groups[2].Success ? match.Groups[2].Value.Trim() : null;
+                var displayName = string.IsNullOrEmpty(format) ? "Fecha y Hora" : $"Fecha y Hora ({format})";
+                variables.Add(new DynamicVariable(VariableType.SystemDateTime, rawTag, displayName));
+            }
+            else if (identifier is "cw" or "semana" or "week")
+            {
+                var format = match.Groups[2].Success ? match.Groups[2].Value.Trim() : null;
+                var displayName = string.IsNullOrEmpty(format) ? "Semana" : $"Semana ({format})";
+                variables.Add(new DynamicVariable(VariableType.CalendarWeek, rawTag, displayName));
             }
             else if (identifier is "cursor")
             {
@@ -61,9 +73,9 @@ public sealed class DynamicVariable
             }
             else
             {
-                var inputParam = identifier.StartsWith("input:")
-                    ? match.Groups[2].Value.Trim()
-                    : match.Groups[3].Value.Trim();
+                var inputParam = !string.IsNullOrEmpty(match.Groups[3].Value)
+                    ? match.Groups[3].Value.Trim()
+                    : match.Groups[4].Value.Trim();
 
                 string name;
                 string? defaultValue = null;

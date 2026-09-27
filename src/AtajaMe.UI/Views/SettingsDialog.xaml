@@ -39,6 +39,30 @@
 
                         <TextBlock Text="Días de retención en papelera antes de purga automática:" FontSize="12" Margin="0,0,0,4" />
                         <TextBox Text="{Binding TrashRetentionDays, UpdateSourceTrigger=PropertyChanged}" Width="80" HorizontalAlignment="Left" Margin="0,0,0,16" />
+
+                        <Separator Background="{DynamicResource BorderSubtleBrush}" Margin="0,0,0,16" />
+
+                        <TextBlock Text="Formato de Fecha y Hora por Defecto" FontWeight="Bold" FontSize="14" Margin="0,0,0,6" />
+                        <TextBlock Text="Formato utilizado al expandir {fecha} o {date} sin especificar formato personalizado:"
+                                   FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,0,0,6" />
+                        <ComboBox SelectedValue="{Binding DefaultDateFormat}"
+                                  SelectedValuePath="Tag"
+                                  Width="300" HorizontalAlignment="Left" Margin="0,0,0,12">
+                            <ComboBoxItem Content="dd/MM/yyyy (ej. 26/09/2026)" Tag="dd/MM/yyyy" />
+                            <ComboBoxItem Content="dd/MM/yy (ej. 26/09/26)" Tag="dd/MM/yy" />
+                            <ComboBoxItem Content="yyyy-MM-dd (ej. 2026-09-26)" Tag="yyyy-MM-dd" />
+                            <ComboBoxItem Content="d (Fecha corta de Windows)" Tag="d" />
+                        </ComboBox>
+
+                        <TextBlock Text="Formato utilizado al expandir {hora} o {time} sin especificar formato:"
+                                   FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,0,0,6" />
+                        <ComboBox SelectedValue="{Binding DefaultTimeFormat}"
+                                  SelectedValuePath="Tag"
+                                  Width="300" HorizontalAlignment="Left" Margin="0,0,0,16">
+                            <ComboBoxItem Content="HH:mm (ej. 16:35)" Tag="HH:mm" />
+                            <ComboBoxItem Content="HH:mm:ss (ej. 16:35:00)" Tag="HH:mm:ss" />
+                            <ComboBoxItem Content="t (Hora corta de Windows)" Tag="t" />
+                        </ComboBox>
                     </StackPanel>
                 </ScrollViewer>
             </TabItem>

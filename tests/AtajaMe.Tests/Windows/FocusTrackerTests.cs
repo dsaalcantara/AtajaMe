@@ -50,4 +50,39 @@ public sealed class FocusTrackerTests
 
         Assert.True(changed);
     }
+
+    [Fact]
+    public void IsCurrentAppActive_WhenForegroundProcessMatchesCurrentProcess_ReturnsTrue()
+    {
+        _fakeWin32.ForegroundWindowHandle = new IntPtr(123);
+        _fakeWin32.ForegroundProcessId = (uint)Environment.ProcessId;
+        var tracker = new FocusTracker(_fakeWin32);
+
+        var isActive = tracker.IsCurrentAppActive();
+
+        Assert.True(isActive);
+    }
+
+    [Fact]
+    public void IsCurrentAppActive_WhenForegroundProcessIsDifferent_ReturnsFalse()
+    {
+        _fakeWin32.ForegroundWindowHandle = new IntPtr(123);
+        _fakeWin32.ForegroundProcessId = (uint)Environment.ProcessId + 9999;
+        var tracker = new FocusTracker(_fakeWin32);
+
+        var isActive = tracker.IsCurrentAppActive();
+
+        Assert.False(isActive);
+    }
+
+    [Fact]
+    public void IsCurrentAppActive_WhenForegroundWindowIsZero_ReturnsFalse()
+    {
+        _fakeWin32.ForegroundWindowHandle = IntPtr.Zero;
+        var tracker = new FocusTracker(_fakeWin32);
+
+        var isActive = tracker.IsCurrentAppActive();
+
+        Assert.False(isActive);
+    }
 }

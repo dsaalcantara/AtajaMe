@@ -49,6 +49,7 @@ public sealed class FakeFocusTracker : IFocusTracker
     public IntPtr ActiveWindow { get; set; } = new IntPtr(100);
     public string? ActiveProcessName { get; set; } = "notepad";
     public bool FocusChangedReturnValue { get; set; } = false;
+    public bool IsCurrentAppActiveValue { get; set; } = false;
 
     public IntPtr GetActiveWindowHandle() => ActiveWindow;
 
@@ -59,6 +60,8 @@ public sealed class FakeFocusTracker : IFocusTracker
         if (FocusChangedReturnValue) return true;
         return originalWindowHandle != ActiveWindow;
     }
+
+    public bool IsCurrentAppActive() => IsCurrentAppActiveValue;
 }
 
 public sealed class FakeSensitiveDetector : ISensitiveControlDetector

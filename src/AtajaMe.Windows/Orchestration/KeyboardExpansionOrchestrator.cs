@@ -140,6 +140,13 @@ public sealed class KeyboardExpansionOrchestrator : IKeyboardExpansionOrchestrat
             return;
         }
 
+        // Si la ventana activa pertenece a AtajaMe, no capturar ni expandir nada en la propia aplicación
+        if (_focusTracker.IsCurrentAppActive())
+        {
+            _engine.ResetBuffer();
+            return;
+        }
+
         char? character = TranslateKeyToChar(keyEvent);
         if (!character.HasValue)
         {
@@ -172,6 +179,11 @@ public sealed class KeyboardExpansionOrchestrator : IKeyboardExpansionOrchestrat
 
     private async Task<bool> IsExecutionTargetAllowedAsync(CancellationToken cancellationToken)
     {
+        if (_focusTracker.IsCurrentAppActive())
+        {
+            return false;
+        }
+
         var processName = _focusTracker.GetActiveProcessName();
         if (!string.IsNullOrEmpty(processName))
         {

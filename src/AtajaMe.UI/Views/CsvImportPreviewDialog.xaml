@@ -8,8 +8,8 @@
         mc:Ignorable="d"
         Title="AtajaMe · Vista Previa de Importación CSV"
         Icon="pack://application:,,,/Assets/app.ico"
-        Height="480" Width="640"
-        MinHeight="400" MinWidth="520"
+        Height="540" Width="720"
+        MinHeight="440" MinWidth="580"
         WindowStartupLocation="CenterOwner"
         Background="{DynamicResource BgPrimaryBrush}">
 
@@ -28,64 +28,192 @@
             <DockPanel Margin="0,6,0,0">
                 <TextBlock Text="{Binding TotalRows, StringFormat='Total filas: {0}'}" Margin="0,0,16,0" FontSize="12" />
                 <TextBlock Text="{Binding ValidSnippetsCount, StringFormat='Atajos válidos: {0}'}" Foreground="{DynamicResource SuccessBrush}" FontWeight="SemiBold" Margin="0,0,16,0" FontSize="12" />
-                <TextBlock Text="{Binding CollisionsCount, StringFormat='Colisiones: {0}'}" Foreground="{DynamicResource WarningBrush}" FontWeight="SemiBold" Margin="0,0,16,0" FontSize="12" />
+                <TextBlock Text="{Binding CollisionsCount, StringFormat='Conflictos: {0}'}" Foreground="{DynamicResource WarningBrush}" FontWeight="SemiBold" Margin="0,0,16,0" FontSize="12" />
                 <TextBlock Text="{Binding ErrorsCount, StringFormat='Errores: {0}'}" Foreground="{DynamicResource DangerBrush}" FontSize="12" />
             </DockPanel>
         </StackPanel>
 
-        <!-- Contenido Central: Colisiones -->
-        <Border Grid.Row="1"
-                Background="{DynamicResource BgCardBrush}"
-                BorderBrush="{DynamicResource BorderBrush}"
-                BorderThickness="1"
-                CornerRadius="6"
-                Padding="10">
-            <DockPanel>
-                <TextBlock Text="Resolución de códigos existentes:"
-                           FontWeight="SemiBold"
-                           FontSize="13"
-                           DockPanel.Dock="Top"
-                           Margin="0,0,0,8" />
+        <!-- Contenido Central con Pestañas -->
+        <TabControl Grid.Row="1" SelectedIndex="{Binding SelectedTabIndex}" Margin="0,0,0,12">
+            <!-- Pestaña 1: Atajos Válidos -->
+            <TabItem Header="{Binding ValidSnippetsCount, StringFormat='📋 Atajos a Importar ({0})'}">
+                <Border Background="{DynamicResource BgCardBrush}"
+                        BorderBrush="{DynamicResource BorderBrush}"
+                        BorderThickness="1"
+                        CornerRadius="0,6,6,6"
+                        Padding="10">
+                    <DockPanel>
+                        <TextBlock Text="Atajos detectados que se incorporarán a tu biblioteca:"
+                                   Foreground="{DynamicResource TextSecondaryBrush}"
+                                   FontSize="12"
+                                   DockPanel.Dock="Top"
+                                   Margin="0,0,0,8" />
 
-                <ListBox ItemsSource="{Binding Collisions}"
-                         Background="Transparent"
-                         BorderThickness="0">
-                    <ListBox.ItemTemplate>
-                        <DataTemplate DataType="{x:Type vm:CsvCollisionItemViewModel}">
-                            <DockPanel Margin="0,4">
-                                <Border Style="{StaticResource CodeBadgeStyle}" DockPanel.Dock="Left" Margin="0,0,8,0">
-                                    <TextBlock Text="{Binding Code}" FontWeight="Bold" Foreground="{DynamicResource AccentBrush}" />
-                                </Border>
-                                <ComboBox SelectedValue="{Binding Resolution}"
-                                          DockPanel.Dock="Right"
-                                          Width="150"
-                                          Margin="8,0,0,0">
+                        <ListBox ItemsSource="{Binding ValidSnippets}"
+                                 Background="Transparent"
+                                 BorderThickness="0"
+                                 ScrollViewer.HorizontalScrollBarVisibility="Disabled">
+                            <ListBox.ItemTemplate>
+                                <DataTemplate DataType="{x:Type vm:CsvPreviewItemViewModel}">
+                                    <Border Background="{DynamicResource BgPrimaryBrush}"
+                                            BorderBrush="{DynamicResource BorderSubtleBrush}"
+                                            BorderThickness="1"
+                                            CornerRadius="6"
+                                            Padding="10,8"
+                                            Margin="0,0,0,6">
+                                        <Grid>
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="Auto" />
+                                                <ColumnDefinition Width="*" />
+                                                <ColumnDefinition Width="Auto" />
+                                            </Grid.ColumnDefinitions>
+
+                                            <!-- Código -->
+                                            <Border Grid.Column="0"
+                                                    Style="{StaticResource CodeBadgeStyle}"
+                                                    VerticalAlignment="Center"
+                                                    Margin="0,0,12,0">
+                                                <TextBlock Text="{Binding Code}"
+                                                           FontWeight="Bold"
+                                                           Foreground="{DynamicResource AccentBrush}" />
+                                            </Border>
+
+                                            <!-- Nombre y Contenido -->
+                                            <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                                                <TextBlock Text="{Binding Name}"
+                                                           FontWeight="SemiBold"
+                                                           FontSize="13"
+                                                           TextTrimming="CharacterEllipsis" />
+                                                <TextBlock Text="{Binding Content}"
+                                                           Foreground="{DynamicResource TextSecondaryBrush}"
+                                                           FontSize="11"
+                                                           TextTrimming="CharacterEllipsis"
+                                                           Margin="0,2,0,0" />
+                                            </StackPanel>
+
+                                            <!-- Carpeta -->
+                                            <Border Grid.Column="2"
+                                                    Background="{DynamicResource BgHoverBrush}"
+                                                    CornerRadius="4"
+                                                    Padding="8,3"
+                                                    VerticalAlignment="Center"
+                                                    Margin="12,0,0,0">
+                                                <TextBlock Text="{Binding FolderPath, StringFormat='📁 {0}'}"
+                                                           FontSize="11"
+                                                           Foreground="{DynamicResource TextSecondaryBrush}" />
+                                            </Border>
+                                        </Grid>
+                                    </Border>
+                                </DataTemplate>
+                            </ListBox.ItemTemplate>
+                        </ListBox>
+                    </DockPanel>
+                </Border>
+            </TabItem>
+
+            <!-- Pestaña 2: Conflictos / Colisiones -->
+            <TabItem Header="{Binding CollisionsCount, StringFormat='⚠️ Conflictos ({0})'}">
+                <Border Background="{DynamicResource BgCardBrush}"
+                        BorderBrush="{DynamicResource BorderBrush}"
+                        BorderThickness="1"
+                        CornerRadius="0,6,6,6"
+                        Padding="10">
+                    <DockPanel>
+                        <DockPanel DockPanel.Dock="Top" Margin="0,0,0,10">
+                            <TextBlock Text="Resolución de códigos existentes:"
+                                       FontWeight="SemiBold"
+                                       FontSize="13"
+                                       VerticalAlignment="Center" />
+                            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                                <TextBlock Text="Para todos:"
+                                           VerticalAlignment="Center"
+                                           FontSize="12"
+                                           Foreground="{DynamicResource TextSecondaryBrush}"
+                                           Margin="0,0,8,0" />
+                                <ComboBox SelectedValue="{Binding DefaultResolution}"
+                                          SelectedValuePath="Tag"
+                                          Width="150">
                                     <ComboBoxItem Content="Omitir" Tag="{x:Static enums:CsvConflictResolution.Skip}" />
                                     <ComboBoxItem Content="Sobrescribir" Tag="{x:Static enums:CsvConflictResolution.Overwrite}" />
                                     <ComboBoxItem Content="Duplicar con sufijo" Tag="{x:Static enums:CsvConflictResolution.DuplicateWithSuffix}" />
                                 </ComboBox>
-                                <TextBlock Text="{Binding IncomingName, StringFormat='Importando: {0}'}"
-                                           VerticalAlignment="Center"
-                                           TextTrimming="CharacterEllipsis" />
-                            </DockPanel>
-                        </DataTemplate>
-                    </ListBox.ItemTemplate>
-                </ListBox>
-            </DockPanel>
-        </Border>
+                            </StackPanel>
+                        </DockPanel>
+
+                        <ListBox ItemsSource="{Binding Collisions}"
+                                 Background="Transparent"
+                                 BorderThickness="0">
+                            <ListBox.ItemTemplate>
+                                <DataTemplate DataType="{x:Type vm:CsvCollisionItemViewModel}">
+                                    <DockPanel Margin="0,4">
+                                        <Border Style="{StaticResource CodeBadgeStyle}" DockPanel.Dock="Left" Margin="0,0,8,0">
+                                            <TextBlock Text="{Binding Code}" FontWeight="Bold" Foreground="{DynamicResource AccentBrush}" />
+                                        </Border>
+                                        <ComboBox SelectedValue="{Binding Resolution}"
+                                                  SelectedValuePath="Tag"
+                                                  DockPanel.Dock="Right"
+                                                  Width="150"
+                                                  Margin="8,0,0,0">
+                                            <ComboBoxItem Content="Omitir" Tag="{x:Static enums:CsvConflictResolution.Skip}" />
+                                            <ComboBoxItem Content="Sobrescribir" Tag="{x:Static enums:CsvConflictResolution.Overwrite}" />
+                                            <ComboBoxItem Content="Duplicar con sufijo" Tag="{x:Static enums:CsvConflictResolution.DuplicateWithSuffix}" />
+                                        </ComboBox>
+                                        <TextBlock Text="{Binding IncomingName, StringFormat='Importando: {0}'}"
+                                                   VerticalAlignment="Center"
+                                                   TextTrimming="CharacterEllipsis" />
+                                    </DockPanel>
+                                </DataTemplate>
+                            </ListBox.ItemTemplate>
+                        </ListBox>
+                    </DockPanel>
+                </Border>
+            </TabItem>
+
+            <!-- Pestaña 3: Errores -->
+            <TabItem Header="{Binding ErrorsCount, StringFormat='❌ Errores ({0})'}">
+                <Border Background="{DynamicResource BgCardBrush}"
+                        BorderBrush="{DynamicResource BorderBrush}"
+                        BorderThickness="1"
+                        CornerRadius="0,6,6,6"
+                        Padding="10">
+                    <DockPanel>
+                        <TextBlock Text="Filas inválidas que se omitirán durante la importación:"
+                                   Foreground="{DynamicResource DangerBrush}"
+                                   FontWeight="SemiBold"
+                                   FontSize="12"
+                                   DockPanel.Dock="Top"
+                                   Margin="0,0,0,8" />
+
+                        <ListBox ItemsSource="{Binding Errors}"
+                                 Background="Transparent"
+                                 BorderThickness="0">
+                            <ListBox.ItemTemplate>
+                                <DataTemplate>
+                                    <TextBlock Text="{Binding}"
+                                               Foreground="{DynamicResource DangerBrush}"
+                                               FontSize="12"
+                                               Margin="0,2" />
+                                </DataTemplate>
+                            </ListBox.ItemTemplate>
+                        </ListBox>
+                    </DockPanel>
+                </Border>
+            </TabItem>
+        </TabControl>
 
         <!-- Acciones Inferiores -->
-        <DockPanel Grid.Row="2" Margin="0,12,0,0">
+        <DockPanel Grid.Row="2">
             <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
                 <Button Content="Cancelar"
                         Command="{Binding CancelCommand}"
                         Style="{StaticResource SecondaryButtonStyle}"
                         Margin="0,0,8,0"
-                        Padding="12,6" />
+                        Padding="14,7" />
                 <Button Content="Proceder con la Importación"
                         Command="{Binding ConfirmCommand}"
+                        IsEnabled="{Binding CanImport}"
                         Style="{StaticResource AccentButtonStyle}"
-                        Padding="14,6" />
+                        Padding="16,7" />
             </StackPanel>
         </DockPanel>
     </Grid>

@@ -10,7 +10,9 @@ public sealed record AppSettingsDto(
     bool StartMinimized,
     int BackupRetentionCount,
     int RecentSnippetsLimit,
-    int TrashRetentionDays)
+    int TrashRetentionDays,
+    string DefaultDateFormat = "dd/MM/yyyy",
+    string DefaultTimeFormat = "HH:mm")
 {
     public static AppSettingsDto Default => new(
         Theme: "System",
@@ -20,7 +22,9 @@ public sealed record AppSettingsDto(
         StartMinimized: false,
         BackupRetentionCount: 10,
         RecentSnippetsLimit: 10,
-        TrashRetentionDays: 30);
+        TrashRetentionDays: 30,
+        DefaultDateFormat: "dd/MM/yyyy",
+        DefaultTimeFormat: "HH:mm");
 }
 
 public sealed class AppSettingsService
@@ -33,6 +37,8 @@ public sealed class AppSettingsService
     public const string KeyBackupRetention = "BackupRetentionCount";
     public const string KeyRecentLimit = "RecentSnippetsLimit";
     public const string KeyTrashRetention = "TrashRetentionDays";
+    public const string KeyDefaultDateFormat = "DefaultDateFormat";
+    public const string KeyDefaultTimeFormat = "DefaultTimeFormat";
 
     private readonly IAppSettingsRepository _repository;
 
@@ -53,6 +59,8 @@ public sealed class AppSettingsService
         var backupRetention = dict.TryGetValue(KeyBackupRetention, out var br) && int.TryParse(br, out var bri) ? bri : 10;
         var recentLimit = dict.TryGetValue(KeyRecentLimit, out var rl) && int.TryParse(rl, out var rli) ? rli : 10;
         var trashRetention = dict.TryGetValue(KeyTrashRetention, out var tr) && int.TryParse(tr, out var tri) ? tri : 30;
+        var dateFormat = dict.TryGetValue(KeyDefaultDateFormat, out var df) && !string.IsNullOrWhiteSpace(df) ? df : "dd/MM/yyyy";
+        var timeFormat = dict.TryGetValue(KeyDefaultTimeFormat, out var tf) && !string.IsNullOrWhiteSpace(tf) ? tf : "HH:mm";
 
         return new AppSettingsDto(
             theme,
@@ -62,7 +70,9 @@ public sealed class AppSettingsService
             startMin,
             backupRetention,
             recentLimit,
-            trashRetention);
+            trashRetention,
+            dateFormat,
+            timeFormat);
     }
 
     public async Task SaveSettingsAsync(AppSettingsDto settings, CancellationToken cancellationToken = default)
@@ -83,5 +93,7 @@ public sealed class AppSettingsService
         await _repository.SetValueAsync(KeyBackupRetention, settings.BackupRetentionCount.ToString(), cancellationToken);
         await _repository.SetValueAsync(KeyRecentLimit, settings.RecentSnippetsLimit.ToString(), cancellationToken);
         await _repository.SetValueAsync(KeyTrashRetention, settings.TrashRetentionDays.ToString(), cancellationToken);
+        await _repository.SetValueAsync(KeyDefaultDateFormat, settings.DefaultDateFormat, cancellationToken);
+        await _repository.SetValueAsync(KeyDefaultTimeFormat, settings.DefaultTimeFormat, cancellationToken);
     }
 }

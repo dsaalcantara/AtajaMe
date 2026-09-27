@@ -62,4 +62,22 @@ public sealed class CsvImportPreviewViewModelTests
         Assert.True(vm.IsConfirmed);
         Assert.True(closed);
     }
+
+    [Fact]
+    public void Constructor_PopulatesValidSnippetsAndSelectsAppropriateTab()
+    {
+        var item1 = new CsvImportItemPreview(1, new CsvSnippetRow("c1", "Nombre 1", "Contenido 1", "00 Comunes"), false, null);
+        var item2 = new CsvImportItemPreview(2, new CsvSnippetRow("c2", "Nombre 2", "Contenido 2", "00 Comunes/Saludos"), false, null);
+
+        var preview = new CsvImportPreview(2, 2, 0, 0, new[] { item1, item2 });
+        var vm = new CsvImportPreviewViewModel(preview);
+
+        Assert.Equal(2, vm.ValidSnippets.Count);
+        Assert.Empty(vm.Collisions);
+        Assert.Empty(vm.Errors);
+        Assert.Equal(0, vm.SelectedTabIndex); // Pestaña de atajos válidos seleccionada por defecto
+        Assert.True(vm.CanImport);
+        Assert.Equal("00 Comunes", vm.ValidSnippets[0].FolderPath);
+        Assert.Equal("00 Comunes/Saludos", vm.ValidSnippets[1].FolderPath);
+    }
 }

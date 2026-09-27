@@ -1,7 +1,9 @@
 using System.IO;
 using System.Windows;
 using Microsoft.Win32;
+using WpfMessageBox = System.Windows.MessageBox;
 using AtajaMe.Application.Backup.Services;
+using AtajaMe.Application.Csv.DTOs;
 using AtajaMe.Application.Csv.Services;
 using AtajaMe.Application.ExcludedApplications;
 using AtajaMe.Application.Expansion;
@@ -58,9 +60,9 @@ public partial class App : System.Windows.Application
     private CreateFolderUseCase _createFolderUseCase = null!;
     private UpdateFolderUseCase _updateFolderUseCase = null!;
     private DeleteFolderUseCase _deleteFolderUseCase = null!;
-
     private ManageExcludedApplicationsUseCase _excludedAppsUseCase = null!;
 
+    private readonly VariableResolutionOptions _variableOptions = new();
     private VariableResolutionService _variableResolutionService = null!;
     private SnippetExpansionEngine _expansionEngine = null!;
 
@@ -158,7 +160,7 @@ public partial class App : System.Windows.Application
         _excludedAppsUseCase = new ManageExcludedApplicationsUseCase(_excludedAppsRepo);
 
         // 4. Motor de Expansión y Variables
-        _variableResolutionService = new VariableResolutionService();
+        _variableResolutionService = new VariableResolutionService(_variableOptions);
         _expansionEngine = new SnippetExpansionEngine(_snippetRepo, _variableResolutionService);
 
         // 5. Copias de Seguridad
@@ -202,6 +204,8 @@ public partial class App : System.Windows.Application
         // 9. Temas y Apariencia
         _themeService = new ThemeService();
         var settings = await _appSettingsService.GetSettingsAsync();
+        _variableOptions.DateFormat = settings.DefaultDateFormat;
+        _variableOptions.TimeFormat = settings.DefaultTimeFormat;
         _themeService.ApplyTheme(settings.Theme);
 
         // Registro de icono y tema nativo de ventana para cualquier ventana que se cargue
@@ -363,7 +367,8 @@ public partial class App : System.Windows.Application
             _themeService,
             _backupService,
             _syncEngine,
-            _excludedAppsUseCase);
+            _excludedAppsUseCase,
+            _variableOptions);
 
         var dialog = new SettingsDialog(vm)
         {
@@ -396,13 +401,25 @@ public partial class App : System.Windows.Application
             try
             {
                 await using var stream = sfd.OpenFile();
-                await using var writer = new StreamWriter(stream);
+                await using var writer = new StreamWriter(stream, System.Text.Encoding.UTF8);
                 await _csvService.ExportAllAsync(writer);
                 _mainViewModel.StatusMessage = "Biblioteca exportada a CSV con éxito.";
+                WpfMessageBox.Show(
+                    _mainWindow,
+                    $"Biblioteca de atajos exportada correctamente en:\n\n{sfd.FileName}",
+                    "AtajaMe · Exportación Exitosa",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Information);
             }
             catch (Exception ex)
             {
                 _mainViewModel.StatusMessage = $"Error al exportar CSV: {ex.Message}";
+                WpfMessageBox.Show(
+                    _mainWindow,
+                    $"Ocurrió un error al exportar la biblioteca:\n\n{ex.Message}",
+                    "AtajaMe · Error al Exportar",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Error);
             }
         }
     }
@@ -412,53 +429,91 @@ public partial class App : System.Windows.Application
         var ofd = new Microsoft.Win32.OpenFileDialog
         {
             Filter = "Archivos CSV (*.csv)|*.csv",
-            DefaultExt = ".csv"
+            DefaultExt = ".csv",
+            Title = "Seleccionar archivo CSV para importar atajos"
         };
 
         if (ofd.ShowDialog() == true)
         {
             try
             {
+                CsvImportPreview preview;
                 using (var reader = new StreamReader(ofd.FileName))
                 {
-                    var preview = await _csvService.AnalyzeImportAsync(reader);
-                    if (preview.ConflictCount > 0 || preview.InvalidRows > 0)
-                    {
-                        var previewVm = new CsvImportPreviewViewModel(preview);
-                        var previewDialog = new CsvImportPreviewDialog(previewVm)
-                        {
-                            Owner = _mainWindow
-                        };
-
-                        if (previewDialog.ShowDialog() != true || !previewVm.IsConfirmed)
-                        {
-                            _mainViewModel.StatusMessage = "Importación CSV cancelada.";
-                            return;
-                        }
-
-                        using var execReader = new StreamReader(ofd.FileName);
-                        var result = await _csvService.ExecuteImportAsync(
-                            execReader,
-                            previewVm.GetResolutionOverrides(),
-                            previewVm.DefaultResolution);
-
-                        await _mainViewModel.LoadDataAsync();
-                        _mainViewModel.StatusMessage = $"Importación completada: {result.ImportedCount} importados, {result.OverwrittenCount} sobrescritos.";
-                        return;
-                    }
+                    preview = await _csvService.AnalyzeImportAsync(reader);
                 }
 
-                // Sin colisiones ni errores
-                using (var execReader = new StreamReader(ofd.FileName))
+                if (preview.TotalRows == 0)
                 {
-                    var result = await _csvService.ExecuteImportAsync(execReader);
-                    await _mainViewModel.LoadDataAsync();
-                    _mainViewModel.StatusMessage = $"Importación completada: {result.ImportedCount} atajos importados.";
+                    WpfMessageBox.Show(
+                        _mainWindow,
+                        "El archivo CSV seleccionado está vacío o no contiene filas de datos para importar.",
+                        "AtajaMe · Archivo Vacío",
+                        MessageBoxButton.OK,
+                        MessageBoxImage.Warning);
+                    return;
                 }
+
+                var previewVm = new CsvImportPreviewViewModel(preview);
+                var previewDialog = new CsvImportPreviewDialog(previewVm)
+                {
+                    Owner = _mainWindow
+                };
+
+                if (previewDialog.ShowDialog() != true || !previewVm.IsConfirmed)
+                {
+                    _mainViewModel.StatusMessage = "Importación CSV cancelada por el usuario.";
+                    return;
+                }
+
+                using var execReader = new StreamReader(ofd.FileName);
+                var result = await _csvService.ExecuteImportAsync(
+                    execReader,
+                    previewVm.GetResolutionOverrides(),
+                    previewVm.DefaultResolution);
+
+                await _mainViewModel.LoadDataAsync();
+
+                var summary = new System.Text.StringBuilder();
+                summary.AppendLine("La importación se ha completado con éxito:");
+                summary.AppendLine();
+                summary.AppendLine($"• {result.ImportedCount} atajos nuevos creados");
+                if (result.OverwrittenCount > 0)
+                {
+                    summary.AppendLine($"• {result.OverwrittenCount} atajos existentes actualizados");
+                }
+                if (result.DuplicatedCount > 0)
+                {
+                    summary.AppendLine($"• {result.DuplicatedCount} atajos duplicados con nuevo sufijo");
+                }
+                if (result.SkippedCount > 0)
+                {
+                    summary.AppendLine($"• {result.SkippedCount} atajos omitidos");
+                }
+                if (result.Errors.Count > 0)
+                {
+                    summary.AppendLine();
+                    summary.AppendLine($"⚠️ {result.Errors.Count} filas contenían errores y no pudieron ser importadas.");
+                }
+
+                _mainViewModel.StatusMessage = $"Importación completada: {result.ImportedCount} nuevos, {result.OverwrittenCount} sobrescritos.";
+
+                WpfMessageBox.Show(
+                    _mainWindow,
+                    summary.ToString(),
+                    "AtajaMe · Importación Exitosa",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Information);
             }
             catch (Exception ex)
             {
                 _mainViewModel.StatusMessage = $"Error al importar CSV: {ex.Message}";
+                WpfMessageBox.Show(
+                    _mainWindow,
+                    $"Ocurrió un error inesperado al importar el archivo CSV:\n\n{ex.Message}",
+                    "AtajaMe · Error al Importar",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Error);
             }
         }
     }

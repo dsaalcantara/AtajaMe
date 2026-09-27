@@ -7,6 +7,7 @@ using AtajaMe.Application.ExcludedApplications;
 using AtajaMe.Application.Services;
 using AtajaMe.Application.Settings;
 using AtajaMe.Application.Sync.Services;
+using AtajaMe.Application.Variables;
 using AtajaMe.UI.Common;
 using AtajaMe.UI.Services;
 
@@ -20,6 +21,7 @@ public sealed class SettingsViewModel : ViewModelBase
     private readonly IBackupService _backupService;
     private readonly ISyncEngine _syncEngine;
     private readonly ManageExcludedApplicationsUseCase _excludedAppsUseCase;
+    private readonly VariableResolutionOptions? _variableOptions;
 
     private string _theme = "System";
     private bool _startWithWindows;
@@ -29,11 +31,25 @@ public sealed class SettingsViewModel : ViewModelBase
     private int _backupRetentionCount = 10;
     private int _recentSnippetsLimit = 10;
     private int _trashRetentionDays = 30;
+    private string _defaultDateFormat = "dd/MM/yyyy";
+    private string _defaultTimeFormat = "HH:mm";
 
     private BackupFileInfoDto? _selectedBackup;
     private string _newExcludedProcessName = string.Empty;
     private string _statusMessage = string.Empty;
     private bool _hasPendingConflicts;
+
+    public string DefaultDateFormat
+    {
+        get => _defaultDateFormat;
+        set => SetProperty(ref _defaultDateFormat, value);
+    }
+
+    public string DefaultTimeFormat
+    {
+        get => _defaultTimeFormat;
+        set => SetProperty(ref _defaultTimeFormat, value);
+    }
 
     public string Theme
     {
@@ -132,7 +148,8 @@ public sealed class SettingsViewModel : ViewModelBase
         IThemeService themeService,
         IBackupService backupService,
         ISyncEngine syncEngine,
-        ManageExcludedApplicationsUseCase excludedAppsUseCase)
+        ManageExcludedApplicationsUseCase excludedAppsUseCase,
+        VariableResolutionOptions? variableOptions = null)
     {
         _settingsService = settingsService;
         _startupService = startupService;
@@ -140,6 +157,7 @@ public sealed class SettingsViewModel : ViewModelBase
         _backupService = backupService;
         _syncEngine = syncEngine;
         _excludedAppsUseCase = excludedAppsUseCase;
+        _variableOptions = variableOptions;
 
         SaveSettingsCommand = new AsyncRelayCommand(SaveSettingsAsync);
         CreateBackupNowCommand = new AsyncRelayCommand(CreateBackupNowAsync);
@@ -160,6 +178,8 @@ public sealed class SettingsViewModel : ViewModelBase
         _backupRetentionCount = settings.BackupRetentionCount;
         _recentSnippetsLimit = settings.RecentSnippetsLimit;
         _trashRetentionDays = settings.TrashRetentionDays;
+        _defaultDateFormat = settings.DefaultDateFormat;
+        _defaultTimeFormat = settings.DefaultTimeFormat;
 
         OnPropertyChanged(nameof(Theme));
         OnPropertyChanged(nameof(SyncFolderPath));
@@ -169,6 +189,8 @@ public sealed class SettingsViewModel : ViewModelBase
         OnPropertyChanged(nameof(BackupRetentionCount));
         OnPropertyChanged(nameof(RecentSnippetsLimit));
         OnPropertyChanged(nameof(TrashRetentionDays));
+        OnPropertyChanged(nameof(DefaultDateFormat));
+        OnPropertyChanged(nameof(DefaultTimeFormat));
 
         await LoadExcludedAppsAsync();
         await LoadBackupsAsync();
@@ -187,9 +209,17 @@ public sealed class SettingsViewModel : ViewModelBase
                 StartMinimized,
                 BackupRetentionCount,
                 RecentSnippetsLimit,
-                TrashRetentionDays);
+                TrashRetentionDays,
+                DefaultDateFormat,
+                DefaultTimeFormat);
 
             await _settingsService.SaveSettingsAsync(dto);
+            if (_variableOptions != null)
+            {
+                _variableOptions.DateFormat = DefaultDateFormat;
+                _variableOptions.TimeFormat = DefaultTimeFormat;
+            }
+
             _startupService.SetStartup(StartWithWindows, StartMinimized);
             StatusMessage = "Configuración guardada correctamente.";
             RequestClose?.Invoke();

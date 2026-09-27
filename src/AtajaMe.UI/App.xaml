@@ -6,8 +6,8 @@
     <Application.Resources>
         <ResourceDictionary>
             <ResourceDictionary.MergedDictionaries>
-                <ResourceDictionary Source="pack://application:,,,/AtajaMe.UI;component/Themes/LightTheme.xaml" />
-                <ResourceDictionary Source="pack://application:,,,/AtajaMe.UI;component/Themes/Styles.xaml" />
+                <ResourceDictionary Source="pack://application:,,,/AtajaMe;component/Themes/LightTheme.xaml" />
+                <ResourceDictionary Source="pack://application:,,,/AtajaMe;component/Themes/Styles.xaml" />
             </ResourceDictionary.MergedDictionaries>
         </ResourceDictionary>
     </Application.Resources>

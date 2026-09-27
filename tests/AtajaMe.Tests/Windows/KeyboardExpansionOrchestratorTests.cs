@@ -120,6 +120,26 @@ public sealed class KeyboardExpansionOrchestratorTests
     }
 
     [Fact]
+    public async Task WhenCurrentAppIsActive_DoesNotExpandOrInject()
+    {
+        var snippet = Snippet.Create("bd", "Buenos días", "¡Buenos días!");
+        await _snippetRepo.AddAsync(snippet);
+
+        _focusTracker.IsCurrentAppActiveValue = true; // El foco está en AtajaMe
+
+        using var orchestrator = CreateOrchestrator();
+        await orchestrator.StartAsync();
+
+        _hook.EmitKey('b');
+        _hook.EmitKey('d');
+        _hook.EmitKey(' ');
+
+        await Task.Delay(100);
+
+        Assert.Empty(_textInjector.Injections);
+    }
+
+    [Fact]
     public async Task WhenNavigationKeyIsPressed_ResetsBuffer()
     {
         var snippet = Snippet.Create("bd", "Buenos días", "¡Buenos días!");

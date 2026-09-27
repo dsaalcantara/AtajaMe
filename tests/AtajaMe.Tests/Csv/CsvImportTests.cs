@@ -152,4 +152,46 @@ public class CsvImportTests : SqliteTestBase
         Assert.NotNull(duplicate);
         Assert.Equal("Texto remoto adicional", duplicate.Content);
     }
+
+    [Fact]
+    public async Task ExecuteImportAsync_WithAccentsAndQuotes_ImportsSuccessfully()
+    {
+        var snippetRepo = new SnippetRepository(ConnectionFactory);
+        var folderRepo = new FolderRepository(ConnectionFactory);
+        var service = new CsvImportExportService(snippetRepo, folderRepo);
+
+        string csv = @"Code,Name,Content,FolderPath,CaseSensitive,IsActive,IsFavorite,SortOrder
+adj_,""Adjunto envío los datos solicitados."",""Adjunto envío los datos solicitados."",""00 Comunes"",false,true,false,1
+re__,""Referencia a email para seguimiento de tareas"","" (ref. correo """" """")"",""00 Comunes"",false,true,false,13
+h__,Buenos días/tardes/noches,""Buenos días,"",""00 Comunes/Saludos"",false,true,false,17";
+
+        using var reader = new StringReader(csv);
+        var preview = await service.AnalyzeImportAsync(reader);
+
+        Assert.Equal(3, preview.TotalRows);
+        Assert.Equal(3, preview.ValidRows);
+        Assert.Equal(0, preview.InvalidRows);
+
+        using var execReader = new StringReader(csv);
+        var result = await service.ExecuteImportAsync(execReader);
+
+        Assert.Equal(3, result.ImportedCount);
+        Assert.Empty(result.Errors);
+
+        var s1 = await snippetRepo.GetByCodeAsync("adj_");
+        Assert.NotNull(s1);
+        Assert.Equal("Adjunto envío los datos solicitados.", s1.Content);
+
+        var s2 = await snippetRepo.GetByCodeAsync("re__");
+        Assert.NotNull(s2);
+        Assert.Equal(" (ref. correo \" \")", s2.Content);
+
+        var s3 = await snippetRepo.GetByCodeAsync("h__");
+        Assert.NotNull(s3);
+        Assert.Equal("Buenos días,", s3.Content);
+
+        var folders = (await folderRepo.GetAllAsync()).ToList();
+        Assert.Contains(folders, f => f.Name == "00 Comunes");
+        Assert.Contains(folders, f => f.Name == "Saludos");
+    }
 }

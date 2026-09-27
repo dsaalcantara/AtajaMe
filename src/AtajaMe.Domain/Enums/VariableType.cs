@@ -28,5 +28,10 @@ public enum VariableType
     /// <summary>
     /// Posicionamiento del cursor tras la expansión ({cursor}).
     /// </summary>
-    CursorPosition
+    CursorPosition,
+
+    /// <summary>
+    /// Número de semana del calendario ({cw}, {semana}, {week}).
+    /// </summary>
+    CalendarWeek
 }

@@ -84,8 +84,8 @@ public sealed class ThemeService : IThemeService
         }
 
         var themeUri = isDark
-            ? new Uri("pack://application:,,,/AtajaMe.UI;component/Themes/DarkTheme.xaml", UriKind.Absolute)
-            : new Uri("pack://application:,,,/AtajaMe.UI;component/Themes/LightTheme.xaml", UriKind.Absolute);
+            ? new Uri("pack://application:,,,/AtajaMe;component/Themes/DarkTheme.xaml", UriKind.Absolute)
+            : new Uri("pack://application:,,,/AtajaMe;component/Themes/LightTheme.xaml", UriKind.Absolute);
 
         var existingThemeDict = app.Resources.MergedDictionaries
             .FirstOrDefault(d => d.Source != null && (d.Source.OriginalString.Contains("DarkTheme.xaml") || d.Source.OriginalString.Contains("LightTheme.xaml")));

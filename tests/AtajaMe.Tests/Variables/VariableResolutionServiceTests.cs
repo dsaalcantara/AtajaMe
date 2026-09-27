@@ -102,6 +102,75 @@ public class VariableResolutionServiceTests
         Assert.DoesNotContain("{DATETIME}", result);
     }
 
+    [Theory]
+    [InlineData("{fecha:dd/mm/aa}", "26/09/26")]
+    [InlineData("{fecha:dd/mm/aaaa}", "26/09/2026")]
+    [InlineData("{fecha:aammdd}", "260926")]
+    [InlineData("{fecha:aaaammdd}", "20260926")]
+    [InlineData("{fecha:aaaa-mm-dd}", "2026-09-26")]
+    [InlineData("{date:dd/MM/yy}", "26/09/26")]
+    [InlineData("{date:yyMMdd}", "260926")]
+    [InlineData("{date:yyyy-MM-dd}", "2026-09-26")]
+    [InlineData("{hora:HH:mm}", "16:35")]
+    [InlineData("{hora:HH:mm:ss}", "16:35:45")]
+    [InlineData("{fechahora:dd/mm/aa HH:mm}", "26/09/26 16:35")]
+    public void ResolveAutomaticVariables_CustomInlineFormats_ProducesExpectedOutput(string tag, string expected)
+    {
+        var fixedDate = new DateTime(2026, 9, 26, 16, 35, 45);
+        var result = _service.ResolveAutomaticVariables(tag, fixedDate, CultureInfo.InvariantCulture);
+
+        Assert.Equal(expected, result);
+    }
+
+    [Theory]
+    [InlineData("CW {semana}", "CW 39")]
+    [InlineData("CW {cw}", "CW 39")]
+    [InlineData("CW {semana:+1}", "CW 40")]
+    [InlineData("CW {cw:+1}", "CW 40")]
+    [InlineData("CW {semana:proxima}", "CW 40")]
+    [InlineData("CW {cw:proxima}", "CW 40")]
+    [InlineData("CW {semana:-1}", "CW 38")]
+    [InlineData("CW {cw:anterior}", "CW 38")]
+    [InlineData("Semana {semana:00}", "Semana 39")]
+    [InlineData("{week}", "39")]
+    [InlineData("{week:+1}", "40")]
+    public void ResolveAutomaticVariables_CalendarWeek_CalculatesIsoWeekCorrectly(string template, string expected)
+    {
+        // 27 de septiembre de 2026 es domingo, perteneciente a la semana 39 ISO
+        var fixedDate = new DateTime(2026, 9, 27, 10, 0, 0);
+        var result = _service.ResolveAutomaticVariables(template, fixedDate, CultureInfo.InvariantCulture);
+
+        Assert.Equal(expected, result);
+    }
+
+    [Fact]
+    public void ExtractVariables_WithCalendarWeek_IdentifiesCorrectType()
+    {
+        var template = "Planificación para CW {semana} y CW {semana:+1}.";
+        var vars = _service.ExtractVariables(template);
+
+        Assert.Equal(2, vars.Count);
+        Assert.Equal(VariableType.CalendarWeek, vars[0].Type);
+        Assert.Equal("{semana}", vars[0].RawTag);
+        Assert.Equal(VariableType.CalendarWeek, vars[1].Type);
+        Assert.Equal("{semana:+1}", vars[1].RawTag);
+    }
+
+    [Fact]
+    public void ExtractVariables_WithCustomFormats_DoesNotTreatAsInteractiveInput()
+    {
+        var template = "Hoy es {fecha:dd/mm/aa} y amd es {fecha:aammdd}. Nombre: {input:cliente}";
+        var vars = _service.ExtractVariables(template);
+
+        Assert.Equal(3, vars.Count);
+        Assert.Equal(VariableType.SystemDate, vars[0].Type);
+        Assert.Equal("{fecha:dd/mm/aa}", vars[0].RawTag);
+        Assert.Equal(VariableType.SystemDate, vars[1].Type);
+        Assert.Equal("{fecha:aammdd}", vars[1].RawTag);
+        Assert.Equal(VariableType.InteractiveInput, vars[2].Type);
+        Assert.Equal("cliente", vars[2].Name);
+    }
+
     [Fact]
     public void ResolveInteractiveVariables_SubstitutesWithProvidedValues()
     {

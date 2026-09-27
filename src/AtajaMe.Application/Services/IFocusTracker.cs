@@ -24,4 +24,10 @@ public interface IFocusTracker
     /// <param name="originalWindowHandle">Manejador de la ventana capturada al inicio.</param>
     /// <returns>True si el foco/ventana ha cambiado o ya no es válido; false si se mantiene igual.</returns>
     bool HasFocusChanged(IntPtr originalWindowHandle);
+
+    /// <summary>
+    /// Comprueba si la ventana activa en primer plano pertenece al proceso actual de la aplicación (AtajaMe).
+    /// Permite evitar expansiones o captura de teclas dentro de la propia interfaz de la aplicación.
+    /// </summary>
+    bool IsCurrentAppActive();
 }

@@ -28,6 +28,26 @@ public sealed class CsvCollisionItemViewModel : ViewModelBase
     }
 }
 
+public sealed class CsvPreviewItemViewModel : ViewModelBase
+{
+    public int RowIndex { get; }
+    public string Code { get; }
+    public string Name { get; }
+    public string Content { get; }
+    public string FolderPath { get; }
+    public bool HasConflict { get; }
+
+    public CsvPreviewItemViewModel(CsvImportItemPreview item)
+    {
+        RowIndex = item.RowIndex;
+        Code = item.Row.Code;
+        Name = string.IsNullOrWhiteSpace(item.Row.Name) ? item.Row.Code : item.Row.Name;
+        Content = item.Row.Content;
+        FolderPath = string.IsNullOrWhiteSpace(item.Row.FolderPath) ? "(Raíz)" : item.Row.FolderPath;
+        HasConflict = item.HasConflict;
+    }
+}
+
 /// <summary>
 /// ViewModel para la previsualización y gestión de colisiones al importar CSV (RF-26).
 /// </summary>
@@ -36,6 +56,7 @@ public sealed class CsvImportPreviewViewModel : ViewModelBase
     private readonly CsvImportPreview _preview;
     private CsvConflictResolution _defaultResolution = CsvConflictResolution.Skip;
     private bool _isConfirmed;
+    private int _selectedTabIndex;
 
     public int TotalRows => _preview.TotalRows;
     public int ValidSnippetsCount => _preview.ValidRows;
@@ -44,6 +65,14 @@ public sealed class CsvImportPreviewViewModel : ViewModelBase
 
     public bool HasCollisions => CollisionsCount > 0;
     public bool HasErrors => ErrorsCount > 0;
+    public bool HasValidSnippets => ValidSnippetsCount > 0;
+    public bool CanImport => ValidSnippetsCount > 0;
+
+    public int SelectedTabIndex
+    {
+        get => _selectedTabIndex;
+        set => SetProperty(ref _selectedTabIndex, value);
+    }
 
     public CsvConflictResolution DefaultResolution
     {
@@ -62,6 +91,7 @@ public sealed class CsvImportPreviewViewModel : ViewModelBase
 
     public bool IsConfirmed => _isConfirmed;
 
+    public ObservableCollection<CsvPreviewItemViewModel> ValidSnippets { get; } = new();
     public ObservableCollection<CsvCollisionItemViewModel> Collisions { get; } = new();
     public ObservableCollection<string> Errors { get; } = new();
 
@@ -74,6 +104,11 @@ public sealed class CsvImportPreviewViewModel : ViewModelBase
     {
         _preview = preview;
 
+        foreach (var item in preview.Items.Where(i => i.IsValid))
+        {
+            ValidSnippets.Add(new CsvPreviewItemViewModel(item));
+        }
+
         foreach (var item in preview.Items.Where(i => i.HasConflict))
         {
             Collisions.Add(new CsvCollisionItemViewModel(item, _defaultResolution));
@@ -82,6 +117,19 @@ public sealed class CsvImportPreviewViewModel : ViewModelBase
         foreach (var err in preview.Items.Where(i => !i.IsValid))
         {
             Errors.Add($"Fila {err.RowIndex}: {err.ValidationErrorMessage}");
+        }
+
+        if (Collisions.Count > 0)
+        {
+            _selectedTabIndex = 1;
+        }
+        else if (ValidSnippets.Count > 0)
+        {
+            _selectedTabIndex = 0;
+        }
+        else
+        {
+            _selectedTabIndex = 2;
         }
 
         ConfirmCommand = new RelayCommand(ExecuteConfirm);
