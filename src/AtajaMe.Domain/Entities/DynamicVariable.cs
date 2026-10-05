@@ -9,7 +9,7 @@ namespace AtajaMe.Domain.Entities;
 public sealed class DynamicVariable
 {
     private static readonly Regex VariableRegex = new(
-        @"\{(date|fecha|time|hora|datetime|fechahora|cursor|cw|semana|week)(?::([^}]+))?\}|\{(?:input:([^}]+)|(?!(?:date|fecha|time|hora|datetime|fechahora|cursor|cw|semana|week)(?:[:\}]))([^}:|]+(?:\|[^}]+)?))\}",
+        @"\{(date|fecha|time|hora|datetime|fechahora|cursor|cw|semana|week|mes|month|dia|day|año|ano|year|trimestre|quarter|q|cuatrimestre|fourmonth|c)(?::([^}]+))?\}|\{(?:input:([^}]+)|(?!(?:date|fecha|time|hora|datetime|fechahora|cursor|cw|semana|week|mes|month|dia|day|año|ano|year|trimestre|quarter|q|cuatrimestre|fourmonth|c|si\s+|if\s+|sino|sinosi|else|elif|/si|/if|fin\s*si|finsi|endif)(?:[:\s\}]))([^}:|]+(?:\|[^}]+)?))\}",
         RegexOptions.Compiled | RegexOptions.IgnoreCase);
 
     public VariableType Type { get; }
@@ -67,6 +67,36 @@ public sealed class DynamicVariable
                 var displayName = string.IsNullOrEmpty(format) ? "Semana" : $"Semana ({format})";
                 variables.Add(new DynamicVariable(VariableType.CalendarWeek, rawTag, displayName));
             }
+            else if (identifier is "mes" or "month")
+            {
+                var format = match.Groups[2].Success ? match.Groups[2].Value.Trim() : null;
+                var displayName = string.IsNullOrEmpty(format) ? "Mes" : $"Mes ({format})";
+                variables.Add(new DynamicVariable(VariableType.Month, rawTag, displayName));
+            }
+            else if (identifier is "dia" or "day")
+            {
+                var format = match.Groups[2].Success ? match.Groups[2].Value.Trim() : null;
+                var displayName = string.IsNullOrEmpty(format) ? "Día" : $"Día ({format})";
+                variables.Add(new DynamicVariable(VariableType.Day, rawTag, displayName));
+            }
+            else if (identifier is "año" or "ano" or "year")
+            {
+                var format = match.Groups[2].Success ? match.Groups[2].Value.Trim() : null;
+                var displayName = string.IsNullOrEmpty(format) ? "Año" : $"Año ({format})";
+                variables.Add(new DynamicVariable(VariableType.Year, rawTag, displayName));
+            }
+            else if (identifier is "trimestre" or "quarter" or "q")
+            {
+                var format = match.Groups[2].Success ? match.Groups[2].Value.Trim() : null;
+                var displayName = string.IsNullOrEmpty(format) ? "Trimestre" : $"Trimestre ({format})";
+                variables.Add(new DynamicVariable(VariableType.Quarter, rawTag, displayName));
+            }
+            else if (identifier is "cuatrimestre" or "fourmonth" or "c")
+            {
+                var format = match.Groups[2].Success ? match.Groups[2].Value.Trim() : null;
+                var displayName = string.IsNullOrEmpty(format) ? "Cuatrimestre" : $"Cuatrimestre ({format})";
+                variables.Add(new DynamicVariable(VariableType.FourMonth, rawTag, displayName));
+            }
             else if (identifier is "cursor")
             {
                 variables.Add(new DynamicVariable(VariableType.CursorPosition, rawTag, "Cursor"));
@@ -76,6 +106,23 @@ public sealed class DynamicVariable
                 var inputParam = !string.IsNullOrEmpty(match.Groups[3].Value)
                     ? match.Groups[3].Value.Trim()
                     : match.Groups[4].Value.Trim();
+
+                if (string.IsNullOrWhiteSpace(inputParam) ||
+                    inputParam.StartsWith("/") ||
+                    inputParam.StartsWith("si ", StringComparison.OrdinalIgnoreCase) ||
+                    inputParam.StartsWith("if ", StringComparison.OrdinalIgnoreCase) ||
+                    inputParam.Equals("sino", StringComparison.OrdinalIgnoreCase) ||
+                    inputParam.Equals("else", StringComparison.OrdinalIgnoreCase) ||
+                    inputParam.StartsWith("sino si", StringComparison.OrdinalIgnoreCase) ||
+                    inputParam.StartsWith("sinosi", StringComparison.OrdinalIgnoreCase) ||
+                    inputParam.StartsWith("else if", StringComparison.OrdinalIgnoreCase) ||
+                    inputParam.StartsWith("elif", StringComparison.OrdinalIgnoreCase) ||
+                    inputParam.Equals("endif", StringComparison.OrdinalIgnoreCase) ||
+                    inputParam.Equals("finsi", StringComparison.OrdinalIgnoreCase) ||
+                    inputParam.Equals("fin si", StringComparison.OrdinalIgnoreCase))
+                {
+                    continue;
+                }
 
                 string name;
                 string? defaultValue = null;

@@ -18,6 +18,18 @@ public sealed class SnippetRepository : ISnippetRepository
         _connectionFactory = connectionFactory;
     }
 
+    public async Task<IReadOnlyList<Snippet>> GetAllAsync(CancellationToken cancellationToken = default)
+    {
+        await using var connection = await _connectionFactory.CreateOpenConnectionAsync(cancellationToken);
+        const string sql = @"
+            SELECT * FROM Snippets 
+            WHERE IsInTrash = 0 
+            ORDER BY SortOrder, Name COLLATE NOCASE";
+
+        var records = await connection.QueryAsync<SnippetRecord>(sql);
+        return records.Select(r => r.ToDomain()).ToList();
+    }
+
     public async Task<IReadOnlyList<Snippet>> GetAllActiveAsync(CancellationToken cancellationToken = default)
     {
         await using var connection = await _connectionFactory.CreateOpenConnectionAsync(cancellationToken);
@@ -101,6 +113,15 @@ public sealed class SnippetRepository : ISnippetRepository
     {
         await using var connection = await _connectionFactory.CreateOpenConnectionAsync(cancellationToken);
         const string sql = "SELECT * FROM Snippets WHERE Code = @Code COLLATE NOCASE AND IsInTrash = 0 LIMIT 1";
+
+        var record = await connection.QuerySingleOrDefaultAsync<SnippetRecord>(sql, new { Code = code.Trim() });
+        return record?.ToDomain();
+    }
+
+    public async Task<Snippet?> GetAnyByCodeAsync(string code, CancellationToken cancellationToken = default)
+    {
+        await using var connection = await _connectionFactory.CreateOpenConnectionAsync(cancellationToken);
+        const string sql = "SELECT * FROM Snippets WHERE Code = @Code COLLATE NOCASE LIMIT 1";
 
         var record = await connection.QuerySingleOrDefaultAsync<SnippetRecord>(sql, new { Code = code.Trim() });
         return record?.ToDomain();

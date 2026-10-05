@@ -21,6 +21,12 @@ public sealed class GetSnippetsUseCase
         return snippet != null ? SnippetDto.FromDomain(snippet) : null;
     }
 
+    public async Task<IReadOnlyList<SnippetDto>> GetAllAsync(CancellationToken cancellationToken = default)
+    {
+        var snippets = await _snippetRepository.GetAllAsync(cancellationToken);
+        return snippets.Select(SnippetDto.FromDomain).ToList();
+    }
+
     public async Task<IReadOnlyList<SnippetDto>> GetAllActiveAsync(CancellationToken cancellationToken = default)
     {
         var snippets = await _snippetRepository.GetAllActiveAsync(cancellationToken);

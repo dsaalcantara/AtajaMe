@@ -126,7 +126,14 @@ public sealed class SnippetEditorViewModel : ViewModelBase
     public string? ErrorMessage
     {
         get => _errorMessage;
-        set => SetProperty(ref _errorMessage, value);
+        set
+        {
+            if (SetProperty(ref _errorMessage, value))
+            {
+                OnPropertyChanged(nameof(HasError));
+                CommandManager.InvalidateRequerySuggested();
+            }
+        }
     }
 
     public bool HasError => !string.IsNullOrEmpty(_errorMessage);

@@ -6,7 +6,7 @@
         xmlns:vm="clr-namespace:AtajaMe.UI.ViewModels"
         mc:Ignorable="d"
         Title="AtajaMe · Gestor de Atajos de Teclado"
-        Icon="pack://application:,,,/Assets/app.ico"
+        Icon="pack://application:,,,/AtajaMe;component/Assets/app.ico"
         Height="700" Width="1100"
         MinHeight="550" MinWidth="850"
         WindowStartupLocation="CenterScreen"
@@ -444,18 +444,48 @@
                                         </TextBlock>
                                     </StackPanel>
 
-                                    <!-- Acciones en Item: Favorito y Estado -->
+                                    <!-- Acciones en Item: Favorito y Estado, o Restaurar si está en papelera -->
                                     <StackPanel Grid.Column="1"
                                                 Orientation="Horizontal"
                                                 VerticalAlignment="Center"
                                                 Margin="6,0,0,0">
-                                        <!-- Botón Favorito -->
+                                        <!-- Botón Restaurar si está en la papelera -->
+                                        <Button Command="{Binding DataContext.RestoreSnippetCommand, RelativeSource={RelativeSource AncestorType=ListBox}}"
+                                                CommandParameter="{Binding}"
+                                                Padding="8,3"
+                                                FontSize="11"
+                                                ToolTip="Restaurar este atajo de la papelera"
+                                                Cursor="Hand">
+                                            <Button.Style>
+                                                <Style TargetType="Button" BasedOn="{StaticResource SecondaryButtonStyle}">
+                                                    <Setter Property="Visibility" Value="Collapsed" />
+                                                    <Style.Triggers>
+                                                        <DataTrigger Binding="{Binding IsInTrash}" Value="True">
+                                                            <Setter Property="Visibility" Value="Visible" />
+                                                        </DataTrigger>
+                                                    </Style.Triggers>
+                                                </Style>
+                                            </Button.Style>
+                                            <TextBlock Text="♻️ Restaurar" FontSize="11" FontWeight="SemiBold" VerticalAlignment="Center" />
+                                        </Button>
+
+                                        <!-- Botón Favorito (solo si no está en papelera) -->
                                         <Button Command="{Binding DataContext.ToggleFavoriteCommand, RelativeSource={RelativeSource AncestorType=ListBox}}"
                                                 CommandParameter="{Binding}"
                                                 Background="Transparent"
                                                 BorderThickness="0"
                                                 Cursor="Hand"
                                                 Margin="0,0,4,0">
+                                            <Button.Style>
+                                                <Style TargetType="Button">
+                                                    <Setter Property="Visibility" Value="Visible" />
+                                                    <Style.Triggers>
+                                                        <DataTrigger Binding="{Binding IsInTrash}" Value="True">
+                                                            <Setter Property="Visibility" Value="Collapsed" />
+                                                        </DataTrigger>
+                                                    </Style.Triggers>
+                                                </Style>
+                                            </Button.Style>
                                             <TextBlock FontSize="14">
                                                 <TextBlock.Style>
                                                     <Style TargetType="TextBlock">
@@ -472,12 +502,23 @@
                                             </TextBlock>
                                         </Button>
 
-                                        <!-- Checkbox Activo -->
+                                        <!-- Checkbox Activo (solo si no está en papelera) -->
                                         <CheckBox IsChecked="{Binding IsActive}"
                                                   Command="{Binding DataContext.ToggleActiveCommand, RelativeSource={RelativeSource AncestorType=ListBox}}"
                                                   CommandParameter="{Binding}"
                                                   ToolTip="Activar o desactivar este atajo"
-                                                  VerticalAlignment="Center" />
+                                                  VerticalAlignment="Center">
+                                            <CheckBox.Style>
+                                                <Style TargetType="CheckBox">
+                                                    <Setter Property="Visibility" Value="Visible" />
+                                                    <Style.Triggers>
+                                                        <DataTrigger Binding="{Binding IsInTrash}" Value="True">
+                                                            <Setter Property="Visibility" Value="Collapsed" />
+                                                        </DataTrigger>
+                                                    </Style.Triggers>
+                                                </Style>
+                                            </CheckBox.Style>
+                                        </CheckBox>
                                     </StackPanel>
                                 </Grid>
                             </DataTemplate>
@@ -565,6 +606,45 @@
                             </TextBlock>
                         </DockPanel>
 
+                        <!-- Banner Informativo si el atajo está en la Papelera -->
+                        <Border Background="#FEF3C7"
+                                BorderBrush="#F59E0B"
+                                BorderThickness="1"
+                                CornerRadius="6"
+                                Padding="12,10"
+                                Margin="0,0,0,12">
+                            <Border.Style>
+                                <Style TargetType="Border">
+                                    <Setter Property="Visibility" Value="Collapsed" />
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding Editor.IsInTrash}" Value="True">
+                                            <Setter Property="Visibility" Value="Visible" />
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </Border.Style>
+                            <DockPanel>
+                                <Button Content="♻️ Restaurar Atajo"
+                                        Command="{Binding RestoreSnippetCommand}"
+                                        CommandParameter="{Binding Editor}"
+                                        Style="{StaticResource AccentButtonStyle}"
+                                        DockPanel.Dock="Right"
+                                        Padding="12,4"
+                                        FontWeight="SemiBold"
+                                        ToolTip="Recuperar este atajo y devolverlo a la biblioteca activa" />
+                                <StackPanel VerticalAlignment="Center" Margin="0,0,8,0">
+                                    <TextBlock Text="🗑️ Este atajo está en la Papelera"
+                                               FontWeight="Bold"
+                                               Foreground="#92400E"
+                                               FontSize="13" />
+                                    <TextBlock Text="Pulsa 'Restaurar Atajo' para reactivarlo y poder volver a editarlo o usarlo."
+                                               Foreground="#B45309"
+                                               FontSize="11"
+                                               Margin="0,2,0,0" />
+                                </StackPanel>
+                            </DockPanel>
+                        </Border>
+
                         <!-- Mensaje de Error de Validación -->
                         <Border Background="#FEE2E2"
                                 BorderBrush="{DynamicResource DangerBrush}"
@@ -648,78 +728,123 @@
 
                         <!-- Botones de inserción de variables -->
                         <WrapPanel Margin="0,0,0,6">
-                            <Button Content="+ Fecha {date}"
-                                    ToolTip="Fecha actual con formato por defecto de configuración"
+                            <Button Content="+ Fecha"
+                                    ToolTip="Fecha actual con formato de configuración ({fecha})"
                                     Command="{Binding Editor.InsertVariableCommand}"
                                     CommandParameter="{}{fecha}"
                                     Style="{StaticResource SecondaryButtonStyle}"
                                     Margin="0,0,4,4" Padding="6,2" FontSize="11" />
-                            <Button Content="+ dd/mm/aa"
-                                    ToolTip="Fecha corta con año de 2 dígitos, ej. 26/09/26"
-                                    Command="{Binding Editor.InsertVariableCommand}"
-                                    CommandParameter="{}{fecha:dd/mm/aa}"
-                                    Style="{StaticResource SecondaryButtonStyle}"
-                                    Margin="0,0,4,4" Padding="6,2" FontSize="11" />
-                            <Button Content="+ aammdd"
-                                    ToolTip="Fecha compacta de 6 dígitos año-mes-día, ej. 260926"
-                                    Command="{Binding Editor.InsertVariableCommand}"
-                                    CommandParameter="{}{fecha:aammdd}"
-                                    Style="{StaticResource SecondaryButtonStyle}"
-                                    Margin="0,0,4,4" Padding="6,2" FontSize="11" />
-                            <Button Content="+ dd/mm/aaaa"
-                                    ToolTip="Fecha completa de 4 dígitos de año, ej. 26/09/2026"
-                                    Command="{Binding Editor.InsertVariableCommand}"
-                                    CommandParameter="{}{fecha:dd/mm/aaaa}"
-                                    Style="{StaticResource SecondaryButtonStyle}"
-                                    Margin="0,0,4,4" Padding="6,2" FontSize="11" />
-                            <Button Content="+ aaaa-mm-dd"
-                                    ToolTip="Fecha en formato estándar internacional ISO, ej. 2026-09-26"
-                                    Command="{Binding Editor.InsertVariableCommand}"
-                                    CommandParameter="{}{fecha:aaaa-mm-dd}"
-                                    Style="{StaticResource SecondaryButtonStyle}"
-                                    Margin="0,0,4,4" Padding="6,2" FontSize="11" />
-                            <Button Content="+ Hora {time}"
-                                    ToolTip="Hora actual en formato 24h, ej. 16:35"
+                            <Button Content="+ Hora"
+                                    ToolTip="Hora actual en formato 24h ({hora})"
                                     Command="{Binding Editor.InsertVariableCommand}"
                                     CommandParameter="{}{hora}"
                                     Style="{StaticResource SecondaryButtonStyle}"
                                     Margin="0,0,4,4" Padding="6,2" FontSize="11" />
-                            <Button Content="+ Fecha y Hora {datetime}"
-                                    ToolTip="Fecha y hora combinadas"
+                            <Button Content="+ Mes"
+                                    ToolTip="Número de mes de dos dígitos ({mes})"
                                     Command="{Binding Editor.InsertVariableCommand}"
-                                    CommandParameter="{}{fechahora}"
+                                    CommandParameter="{}{mes}"
                                     Style="{StaticResource SecondaryButtonStyle}"
                                     Margin="0,0,4,4" Padding="6,2" FontSize="11" />
-                            <Button Content="+ CW esta (CW {semana})"
-                                    ToolTip="Inserta 'CW' seguido del número de semana ISO actual (ej. CW 39)"
+                            <Button Content="+ Día"
+                                    ToolTip="Número de día de dos dígitos ({dia})"
                                     Command="{Binding Editor.InsertVariableCommand}"
-                                    CommandParameter="CW {semana}"
+                                    CommandParameter="{}{dia}"
                                     Style="{StaticResource SecondaryButtonStyle}"
                                     Margin="0,0,4,4" Padding="6,2" FontSize="11" />
-                            <Button Content="+ CW próxima (CW {semana:+1})"
-                                    ToolTip="Inserta 'CW' seguido del número de la próxima semana ISO (ej. CW 40)"
-                                    Command="{Binding Editor.InsertVariableCommand}"
-                                    CommandParameter="CW {semana:+1}"
-                                    Style="{StaticResource SecondaryButtonStyle}"
-                                    Margin="0,0,4,4" Padding="6,2" FontSize="11" />
-                            <Button Content="+ Semana {semana}"
-                                    ToolTip="Inserta únicamente el número de semana ISO actual (ej. 39)"
-                                    Command="{Binding Editor.InsertVariableCommand}"
-                                    CommandParameter="{}{semana}"
-                                    Style="{StaticResource SecondaryButtonStyle}"
-                                    Margin="0,0,4,4" Padding="6,2" FontSize="11" />
-                            <Button Content="+ Variable {input:campo}"
-                                    ToolTip="Variable que solicita un texto interactivo al expandir"
+                            <Button Content="+ Variable"
+                                    ToolTip="Variable que solicita un texto interactivo al expandir ({input:nombre})"
                                     Command="{Binding Editor.InsertVariableCommand}"
                                     CommandParameter="{}{input:nombre}"
                                     Style="{StaticResource SecondaryButtonStyle}"
                                     Margin="0,0,4,4" Padding="6,2" FontSize="11" />
-                            <Button Content="+ Portapapeles {clipboard}"
-                                    ToolTip="Inserta el contenido actual del portapapeles"
-                                    Command="{Binding Editor.InsertVariableCommand}"
-                                    CommandParameter="{}{clipboard}"
+                            <Button Content="➕ Más marcadores ▾"
+                                    Click="OnInsertVariableButtonClick"
+                                    ToolTip="Despliega el catálogo completo de marcadores de fecha, días, semanas, trimestres y cuatrimestres"
                                     Style="{StaticResource SecondaryButtonStyle}"
-                                    Margin="0,0,4,4" Padding="6,2" FontSize="11" />
+                                    Margin="0,0,4,4" Padding="8,2" FontSize="11" FontWeight="SemiBold">
+                                <Button.ContextMenu>
+                                    <ContextMenu DataContext="{Binding Path=PlacementTarget.DataContext, RelativeSource={RelativeSource Self}}">
+                                        <MenuItem Header="📅 Fechas">
+                                            <MenuItem Header="{}{fecha} (Predeterminada)" Command="{Binding Editor.InsertVariableCommand}" CommandParameter="{}{fecha}" />
+                                            <MenuItem Header="{}{fecha:dd/mm/aaaa} (dd/mm/aaaa)" Command="{Binding Editor.InsertVariableCommand}" CommandParameter="{}{fecha:dd/mm/aaaa}" />
+                                            <MenuItem Header="{}{fecha:aaaa-mm-dd} (ISO aaaa-mm-dd)" Command="{Binding Editor.InsertVariableCommand}" CommandParameter="{}{fecha:aaaa-mm-dd}" />
+                                            <MenuItem Header="{}{fecha:dd/mm/aa} (dd/mm/aa)" Command="{Binding Editor.InsertVariableCommand}" CommandParameter="{}{fecha:dd/mm/aa}" />
+                                            <MenuItem Header="{}{fecha:aammdd} (aammdd compacto)" Command="{Binding Editor.InsertVariableCommand}" CommandParameter="{}{fecha:aammdd}" />
+                                        </MenuItem>
+                                        <MenuItem Header="🕒 Horas">
+                                            <MenuItem Header="{}{hora} (Hora 24h)" Command="{Binding Editor.InsertVariableCommand}" CommandParameter="{}{hora}" />
+                                            <MenuItem Header="{}{hora:HH:mm:ss} (Con segundos)" Command="{Binding Editor.InsertVariableCommand}" CommandParameter="{}{hora:HH:mm:ss}" />
+                                            <MenuItem Header="{}{fechahora} (Fecha y hora combinada)" Command="{Binding Editor.InsertVariableCommand}" CommandParameter="{}{fechahora}" />
+                                        </MenuItem>
+                                        <MenuItem Header="🗓️ Días">
+                                            <MenuItem Header="{}{dia} (Número 01..31)" Command="{Binding Editor.InsertVariableCommand}" CommandParameter="{}{dia}" />
+                                            <MenuItem Header="{}{dia:Nombre} (Nombre capitalizado, ej. Lunes)" Command="{Binding Editor.InsertVariableCommand}" CommandParameter="{}{dia:Nombre}" />
+                                            <MenuItem Header="{}{dia:nombre} (Nombre minúsculas, ej. lunes)" Command="{Binding Editor.InsertVariableCommand}" CommandParameter="{}{dia:nombre}" />
+                                            <MenuItem Header="{}{dia:MAYUS} (Nombre mayúsculas, ej. LUNES)" Command="{Binding Editor.InsertVariableCommand}" CommandParameter="{}{dia:MAYUS}" />
+                                            <MenuItem Header="{}{dia:corto} (Abreviado, ej. Lun)" Command="{Binding Editor.InsertVariableCommand}" CommandParameter="{}{dia:corto}" />
+                                            <Separator />
+                                            <MenuItem Header="{}{dia:+1} (Mañana, número)" Command="{Binding Editor.InsertVariableCommand}" CommandParameter="{}{dia:+1}" />
+                                            <MenuItem Header="{}{dia:+1:Nombre} (Mañana, nombre)" Command="{Binding Editor.InsertVariableCommand}" CommandParameter="{}{dia:+1:Nombre}" />
+                                            <MenuItem Header="{}{dia:-1} (Ayer, número)" Command="{Binding Editor.InsertVariableCommand}" CommandParameter="{}{dia:-1}" />
+                                            <MenuItem Header="{}{dia:año} (Día del año 1..366)" Command="{Binding Editor.InsertVariableCommand}" CommandParameter="{}{dia:año}" />
+                                        </MenuItem>
+                                        <MenuItem Header="📆 Meses">
+                                            <MenuItem Header="{}{mes} (Número 01..12)" Command="{Binding Editor.InsertVariableCommand}" CommandParameter="{}{mes}" />
+                                            <MenuItem Header="{}{mes:Nombre} (Nombre capitalizado, ej. Septiembre)" Command="{Binding Editor.InsertVariableCommand}" CommandParameter="{}{mes:Nombre}" />
+                                            <MenuItem Header="{}{mes:nombre} (Nombre minúsculas, ej. septiembre)" Command="{Binding Editor.InsertVariableCommand}" CommandParameter="{}{mes:nombre}" />
+                                            <MenuItem Header="{}{mes:MAYUS} (Nombre mayúsculas, ej. SEPTIEMBRE)" Command="{Binding Editor.InsertVariableCommand}" CommandParameter="{}{mes:MAYUS}" />
+                                            <MenuItem Header="{}{mes:corto} (Abreviado, ej. Sep)" Command="{Binding Editor.InsertVariableCommand}" CommandParameter="{}{mes:corto}" />
+                                            <Separator />
+                                            <MenuItem Header="{}{mes:+1} (Próximo mes, número)" Command="{Binding Editor.InsertVariableCommand}" CommandParameter="{}{mes:+1}" />
+                                            <MenuItem Header="{}{mes:+1:Nombre} (Próximo mes, nombre)" Command="{Binding Editor.InsertVariableCommand}" CommandParameter="{}{mes:+1:Nombre}" />
+                                            <MenuItem Header="{}{mes:-1} (Mes anterior, número)" Command="{Binding Editor.InsertVariableCommand}" CommandParameter="{}{mes:-1}" />
+                                            <MenuItem Header="{}{mes:-1:Nombre} (Mes anterior, nombre)" Command="{Binding Editor.InsertVariableCommand}" CommandParameter="{}{mes:-1:Nombre}" />
+                                        </MenuItem>
+                                        <MenuItem Header="📅 Semanas">
+                                            <MenuItem Header="{}{semana} (Semana ISO actual, ej. 39)" Command="{Binding Editor.InsertVariableCommand}" CommandParameter="{}{semana}" />
+                                            <MenuItem Header="CW {}{semana} (ej. CW 39)" Command="{Binding Editor.InsertVariableCommand}" CommandParameter="CW {semana}" />
+                                            <MenuItem Header="CW {}{semana:+1} (Próxima semana, ej. CW 40)" Command="{Binding Editor.InsertVariableCommand}" CommandParameter="CW {semana:+1}" />
+                                            <MenuItem Header="CW {}{semana:-1} (Semana pasada, ej. CW 38)" Command="{Binding Editor.InsertVariableCommand}" CommandParameter="CW {semana:-1}" />
+                                        </MenuItem>
+                                        <MenuItem Header="📊 Trimestres y Cuatrimestres">
+                                            <MenuItem Header="{}{trimestre} (ej. T3)" Command="{Binding Editor.InsertVariableCommand}" CommandParameter="{}{trimestre}" />
+                                            <MenuItem Header="{}{trimestre:Q} (ej. Q3)" Command="{Binding Editor.InsertVariableCommand}" CommandParameter="{}{trimestre:Q}" />
+                                            <MenuItem Header="{}{trimestre:num} (Dígito 1..4)" Command="{Binding Editor.InsertVariableCommand}" CommandParameter="{}{trimestre:num}" />
+                                            <MenuItem Header="{}{trimestre:romano} (Romano I..IV)" Command="{Binding Editor.InsertVariableCommand}" CommandParameter="{}{trimestre:romano}" />
+                                            <MenuItem Header="{}{trimestre:+1} (Próximo trimestre)" Command="{Binding Editor.InsertVariableCommand}" CommandParameter="{}{trimestre:+1}" />
+                                            <Separator />
+                                            <MenuItem Header="{}{cuatrimestre} (ej. C3)" Command="{Binding Editor.InsertVariableCommand}" CommandParameter="{}{cuatrimestre}" />
+                                            <MenuItem Header="{}{cuatrimestre:num} (Dígito 1..3)" Command="{Binding Editor.InsertVariableCommand}" CommandParameter="{}{cuatrimestre:num}" />
+                                            <MenuItem Header="{}{cuatrimestre:romano} (Romano I..III)" Command="{Binding Editor.InsertVariableCommand}" CommandParameter="{}{cuatrimestre:romano}" />
+                                            <MenuItem Header="{}{cuatrimestre:+1} (Próximo cuatrimestre)" Command="{Binding Editor.InsertVariableCommand}" CommandParameter="{}{cuatrimestre:+1}" />
+                                        </MenuItem>
+                                        <MenuItem Header="⏳ Años">
+                                            <MenuItem Header="{}{año} (Año 4 dígitos, ej. 2026)" Command="{Binding Editor.InsertVariableCommand}" CommandParameter="{}{año}" />
+                                            <MenuItem Header="{}{año:corto} (Año 2 dígitos, ej. 26)" Command="{Binding Editor.InsertVariableCommand}" CommandParameter="{}{año:corto}" />
+                                            <MenuItem Header="{}{año:+1} (Próximo año)" Command="{Binding Editor.InsertVariableCommand}" CommandParameter="{}{año:+1}" />
+                                            <MenuItem Header="{}{año:-1} (Año anterior)" Command="{Binding Editor.InsertVariableCommand}" CommandParameter="{}{año:-1}" />
+                                        </MenuItem>
+                                        <MenuItem Header="🔀 Condicionales">
+                                            <MenuItem Header="Saludo según hora (Días / Tardes / Noches)"
+                                                      Command="{Binding Editor.InsertVariableCommand}"
+                                                      CommandParameter="{}{si hora &lt; 12}&#x0a;Buenos días&#x0a;{sino si hora &lt; 20}&#x0a;Buenas tardes&#x0a;{sino}&#x0a;Buenas noches&#x0a;{/si}" />
+                                            <MenuItem Header="Bloque simple: {si condición}...{/si}"
+                                                      Command="{Binding Editor.InsertVariableCommand}"
+                                                      CommandParameter="{}{si hora &lt; 12}&#x0a;Buenos días&#x0a;{/si}" />
+                                            <MenuItem Header="Bloque con alternativa: {si}...{sino}...{/si}"
+                                                      Command="{Binding Editor.InsertVariableCommand}"
+                                                      CommandParameter="{}{si dia_semana &lt;= 5}&#x0a;Laborable&#x0a;{sino}&#x0a;Fin de semana&#x0a;{/si}" />
+                                        </MenuItem>
+                                        <Separator />
+                                        <MenuItem Header="⚙️ Interactivas y Especiales">
+                                            <MenuItem Header="{}{input:nombre} (Variable interactiva)" Command="{Binding Editor.InsertVariableCommand}" CommandParameter="{}{input:nombre}" />
+                                            <MenuItem Header="{}{clipboard} (Portapapeles)" Command="{Binding Editor.InsertVariableCommand}" CommandParameter="{}{clipboard}" />
+                                            <MenuItem Header="{}{cursor} (Posicionamiento de cursor)" Command="{Binding Editor.InsertVariableCommand}" CommandParameter="{}{cursor}" />
+                                        </MenuItem>
+                                    </ContextMenu>
+                                </Button.ContextMenu>
+                            </Button>
                         </WrapPanel>
 
                         <!-- Campo de Contenido Multilínea -->
@@ -749,15 +874,52 @@
                             </StackPanel>
 
                             <StackPanel Orientation="Horizontal">
+                                <Button Content="♻️ Restaurar Atajo"
+                                        Command="{Binding RestoreSnippetCommand}"
+                                        CommandParameter="{Binding Editor}"
+                                        Margin="0,0,8,0"
+                                        Padding="12,5"
+                                        ToolTip="Restaurar este atajo de la papelera">
+                                    <Button.Style>
+                                        <Style TargetType="Button" BasedOn="{StaticResource AccentButtonStyle}">
+                                            <Setter Property="Visibility" Value="Collapsed" />
+                                            <Style.Triggers>
+                                                <DataTrigger Binding="{Binding Editor.IsInTrash}" Value="True">
+                                                    <Setter Property="Visibility" Value="Visible" />
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </Button.Style>
+                                </Button>
+
                                 <Button Content="Duplicar"
                                         Command="{Binding DuplicateSnippetCommand}"
-                                        Style="{StaticResource SecondaryButtonStyle}"
                                         Margin="0,0,8,0"
-                                        Padding="10,5" />
+                                        Padding="10,5">
+                                    <Button.Style>
+                                        <Style TargetType="Button" BasedOn="{StaticResource SecondaryButtonStyle}">
+                                            <Style.Triggers>
+                                                <DataTrigger Binding="{Binding Editor.IsInTrash}" Value="True">
+                                                    <Setter Property="Visibility" Value="Collapsed" />
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </Button.Style>
+                                </Button>
+
                                 <Button Content="Eliminar"
                                         Command="{Binding DeleteSnippetCommand}"
-                                        Style="{StaticResource DangerButtonStyle}"
-                                        Padding="10,5" />
+                                        Padding="10,5">
+                                    <Button.Style>
+                                        <Style TargetType="Button" BasedOn="{StaticResource DangerButtonStyle}">
+                                            <Style.Triggers>
+                                                <DataTrigger Binding="{Binding Editor.IsInTrash}" Value="True">
+                                                    <Setter Property="Visibility" Value="Collapsed" />
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </Button.Style>
+                                </Button>
                             </StackPanel>
                         </DockPanel>
 

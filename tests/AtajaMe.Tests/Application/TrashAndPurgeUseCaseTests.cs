@@ -66,9 +66,9 @@ public sealed class TrashAndPurgeUseCaseTests : SqliteTestBase
         await _snippetRepository.AddAsync(snippet1);
         await _trashUseCase.ExecuteAsync(snippet1.Id);
 
-        // Al intentar crear un atajo con el código de un atajo que está en la papelera, debe rechazarlo por duplicado
+        // Al intentar crear un atajo con el código de un atajo que está en la papelera, debe rechazarlo indicando que está en papelera
         var command = new CreateSnippetCommand("codigo_reservado", "Segundo", "Texto 2");
-        await Assert.ThrowsAsync<DuplicateSnippetCodeException>(() => createUseCase.ExecuteAsync(command));
+        await Assert.ThrowsAsync<SnippetInTrashException>(() => createUseCase.ExecuteAsync(command));
     }
 
     [Fact]

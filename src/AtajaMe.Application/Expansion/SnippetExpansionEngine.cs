@@ -119,7 +119,7 @@ public sealed class SnippetExpansionEngine : ISnippetExpansionEngine, IDisposabl
         ArgumentNullException.ThrowIfNull(partiallyResolvedContent);
         ArgumentNullException.ThrowIfNull(userInputs);
 
-        return _variableService.ResolveInteractiveVariables(partiallyResolvedContent, userInputs);
+        return _variableService.ResolveAll(snippet.Content, userInputs);
     }
 
     public async Task RecordExpansionUsageAsync(Guid snippetId, CancellationToken cancellationToken = default)

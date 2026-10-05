@@ -7,7 +7,7 @@
         xmlns:enums="clr-namespace:AtajaMe.Domain.Enums;assembly=AtajaMe.Domain"
         mc:Ignorable="d"
         Title="AtajaMe · Vista Previa de Importación CSV"
-        Icon="pack://application:,,,/Assets/app.ico"
+        Icon="pack://application:,,,/AtajaMe;component/Assets/app.ico"
         Height="540" Width="720"
         MinHeight="440" MinWidth="580"
         WindowStartupLocation="CenterOwner"

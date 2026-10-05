@@ -6,7 +6,7 @@
         xmlns:vm="clr-namespace:AtajaMe.UI.ViewModels"
         mc:Ignorable="d"
         Title="AtajaMe · Configuración"
-        Icon="pack://application:,,,/Assets/app.ico"
+        Icon="pack://application:,,,/AtajaMe;component/Assets/app.ico"
         Height="520" Width="680"
         MinHeight="450" MinWidth="580"
         WindowStartupLocation="CenterOwner"

@@ -33,5 +33,30 @@ public enum VariableType
     /// <summary>
     /// Número de semana del calendario ({cw}, {semana}, {week}).
     /// </summary>
-    CalendarWeek
+    CalendarWeek,
+
+    /// <summary>
+    /// Mes del calendario ({mes}, {month}).
+    /// </summary>
+    Month,
+
+    /// <summary>
+    /// Día del mes o de la semana ({dia}, {day}).
+    /// </summary>
+    Day,
+
+    /// <summary>
+    /// Año del calendario ({año}, {ano}, {year}).
+    /// </summary>
+    Year,
+
+    /// <summary>
+    /// Trimestre del año ({trimestre}, {quarter}, {q}).
+    /// </summary>
+    Quarter,
+
+    /// <summary>
+    /// Cuatrimestre del año ({cuatrimestre}, {fourmonth}, {c}).
+    /// </summary>
+    FourMonth
 }

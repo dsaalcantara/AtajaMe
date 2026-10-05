@@ -14,6 +14,7 @@
         SizeToContent="WidthAndHeight"
         MinWidth="320"
         MaxWidth="480"
+        MaxHeight="480"
         WindowStartupLocation="Manual"
         KeyDown="OnWindowKeyDown">
 
@@ -52,23 +53,28 @@
 
             <Separator Background="{DynamicResource BorderSubtleBrush}" Margin="0,0,0,12" />
 
-            <!-- Lista de Campos Dinámicos -->
-            <ItemsControl x:Name="FieldsItemsControl"
-                          ItemsSource="{Binding Fields}">
-                <ItemsControl.ItemTemplate>
-                    <DataTemplate>
-                        <StackPanel Margin="0,0,0,10">
-                            <TextBlock Text="{Binding DisplayLabel}"
-                                       FontSize="12"
-                                       FontWeight="SemiBold"
-                                       Foreground="{DynamicResource TextSecondaryBrush}"
-                                       Margin="0,0,0,4" />
-                            <TextBox Text="{Binding Value, UpdateSourceTrigger=PropertyChanged}"
-                                     Loaded="OnFieldTextBoxLoaded" />
-                        </StackPanel>
-                    </DataTemplate>
-                </ItemsControl.ItemTemplate>
-            </ItemsControl>
+            <!-- Lista de Campos Dinámicos con desplazamiento -->
+            <ScrollViewer MaxHeight="250"
+                          VerticalScrollBarVisibility="Auto"
+                          HorizontalScrollBarVisibility="Disabled"
+                          Margin="0,0,0,6">
+                <ItemsControl x:Name="FieldsItemsControl"
+                              ItemsSource="{Binding Fields}">
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate>
+                            <StackPanel Margin="0,0,0,10">
+                                <TextBlock Text="{Binding DisplayLabel}"
+                                           FontSize="12"
+                                           FontWeight="SemiBold"
+                                           Foreground="{DynamicResource TextSecondaryBrush}"
+                                           Margin="0,0,0,4" />
+                                <TextBox Text="{Binding Value, UpdateSourceTrigger=PropertyChanged}"
+                                         Loaded="OnFieldTextBoxLoaded" />
+                            </StackPanel>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+            </ScrollViewer>
 
             <!-- Acciones Rápidas -->
             <DockPanel Margin="0,6,0,0">

@@ -135,4 +135,30 @@ public sealed class SnippetEditorViewModelTests
 
         Assert.True(saveCalled);
     }
+
+    [Fact]
+    public void SettingErrorMessage_RaisesPropertyChangedForHasError()
+    {
+        var vm = new SnippetEditorViewModel();
+        var raisedProperties = new List<string>();
+        vm.PropertyChanged += (_, e) =>
+        {
+            if (e.PropertyName != null)
+            {
+                raisedProperties.Add(e.PropertyName);
+            }
+        };
+
+        vm.ErrorMessage = "El código ya existe.";
+
+        Assert.True(vm.HasError);
+        Assert.Contains(nameof(vm.HasError), raisedProperties);
+        Assert.Contains(nameof(vm.ErrorMessage), raisedProperties);
+
+        raisedProperties.Clear();
+        vm.ErrorMessage = null;
+
+        Assert.False(vm.HasError);
+        Assert.Contains(nameof(vm.HasError), raisedProperties);
+    }
 }

@@ -43,10 +43,10 @@ public sealed class SyncEngine : ISyncEngine
         var metadata = await _syncMetadataRepository.GetAsync(cancellationToken) ?? SyncMetadata.CreateDefault();
 
         var localFolders = await _folderRepository.GetAllAsync(cancellationToken);
-        var activeSnippets = await _snippetRepository.GetAllActiveAsync(cancellationToken);
+        var librarySnippets = await _snippetRepository.GetAllAsync(cancellationToken);
         var trashSnippets = await _snippetRepository.GetTrashAsync(cancellationToken);
 
-        var allSnippets = activeSnippets.Concat(trashSnippets).DistinctBy(s => s.Id).ToList();
+        var allSnippets = librarySnippets.Concat(trashSnippets).DistinctBy(s => s.Id).ToList();
 
         var folderDtos = localFolders.Select(f => new SyncFolderDto(
             f.Id,

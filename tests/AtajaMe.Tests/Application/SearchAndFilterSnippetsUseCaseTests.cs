@@ -62,6 +62,11 @@ public sealed class SearchAndFilterSnippetsUseCaseTests : SqliteTestBase
 
         var activeSnippets = await _getSnippetsUseCase.GetAllActiveAsync();
         Assert.Empty(activeSnippets);
+
+        var allLibrarySnippets = await _getSnippetsUseCase.GetAllAsync();
+        Assert.Single(allLibrarySnippets);
+        Assert.Equal(snippet.Id, allLibrarySnippets[0].Id);
+        Assert.False(allLibrarySnippets[0].IsActive);
     }
 
     [Fact]

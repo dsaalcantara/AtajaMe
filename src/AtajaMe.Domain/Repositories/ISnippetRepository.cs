@@ -7,6 +7,7 @@ namespace AtajaMe.Domain.Repositories;
 /// </summary>
 public interface ISnippetRepository
 {
+    Task<IReadOnlyList<Snippet>> GetAllAsync(CancellationToken cancellationToken = default);
     Task<IReadOnlyList<Snippet>> GetAllActiveAsync(CancellationToken cancellationToken = default);
     Task<IReadOnlyList<Snippet>> GetByFolderIdAsync(Guid? folderId, CancellationToken cancellationToken = default);
     Task<IReadOnlyList<Snippet>> GetFavoritesAsync(CancellationToken cancellationToken = default);
@@ -14,6 +15,7 @@ public interface ISnippetRepository
     Task<IReadOnlyList<Snippet>> GetTrashAsync(CancellationToken cancellationToken = default);
     Task<Snippet?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default);
     Task<Snippet?> GetByCodeAsync(string code, CancellationToken cancellationToken = default);
+    Task<Snippet?> GetAnyByCodeAsync(string code, CancellationToken cancellationToken = default);
     Task<IReadOnlyList<Snippet>> SearchAsync(string query, Guid? folderId = null, CancellationToken cancellationToken = default);
 
     Task AddAsync(Snippet snippet, CancellationToken cancellationToken = default);

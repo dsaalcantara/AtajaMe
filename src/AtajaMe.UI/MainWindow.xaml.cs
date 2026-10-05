@@ -85,4 +85,15 @@ public partial class MainWindow : Window
         var app = (App)System.Windows.Application.Current;
         app.OpenSettingsDialog();
     }
+
+    private void OnInsertVariableButtonClick(object sender, RoutedEventArgs e)
+    {
+        if (sender is FrameworkElement element && element.ContextMenu != null)
+        {
+            element.ContextMenu.DataContext = element.DataContext;
+            element.ContextMenu.PlacementTarget = element;
+            element.ContextMenu.Placement = System.Windows.Controls.Primitives.PlacementMode.Bottom;
+            element.ContextMenu.IsOpen = true;
+        }
+    }
 }

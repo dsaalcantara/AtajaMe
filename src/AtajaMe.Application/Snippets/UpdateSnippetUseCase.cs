@@ -37,6 +37,12 @@ public sealed class UpdateSnippetUseCase
 
         if (await _snippetRepository.ExistsCodeAsync(command.Code, command.Id, cancellationToken))
         {
+            var existing = await _snippetRepository.GetAnyByCodeAsync(command.Code, cancellationToken);
+            if (existing != null && existing.IsInTrash)
+            {
+                throw new SnippetInTrashException(command.Code, existing.Id);
+            }
+
             throw new DuplicateSnippetCodeException(command.Code);
         }
 

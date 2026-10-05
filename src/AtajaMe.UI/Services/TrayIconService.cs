@@ -49,11 +49,20 @@ public sealed class TrayIconService : ITrayIconService
     {
         try
         {
-            var streamInfo = System.Windows.Application.GetResourceStream(new Uri("pack://application:,,,/Assets/app.ico"));
-            if (streamInfo != null)
+            var diskPath = System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Assets", "app.ico");
+            if (System.IO.File.Exists(diskPath))
             {
-                using var stream = streamInfo.Stream;
-                _activeIcon = new Icon(stream, new Size(32, 32));
+                _activeIcon = new Icon(diskPath, 32, 32);
+            }
+            else
+            {
+                var streamInfo = System.Windows.Application.GetResourceStream(new Uri("pack://application:,,,/AtajaMe;component/Assets/app.ico"))
+                              ?? System.Windows.Application.GetResourceStream(new Uri("pack://application:,,,/Assets/app.ico"));
+                if (streamInfo != null)
+                {
+                    using var stream = streamInfo.Stream;
+                    _activeIcon = new Icon(stream, new Size(32, 32));
+                }
             }
         }
         catch

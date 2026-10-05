@@ -114,6 +114,13 @@ public sealed class FakeSnippetRepository : ISnippetRepository
         return Task.FromResult(match);
     }
 
+    public Task<Snippet?> GetAnyByCodeAsync(string code, CancellationToken cancellationToken = default)
+    {
+        var match = _snippets.FirstOrDefault(s =>
+            string.Equals(s.Code, code, StringComparison.OrdinalIgnoreCase));
+        return Task.FromResult(match);
+    }
+
     public Task<Snippet?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default)
     {
         var match = _snippets.FirstOrDefault(s => s.Id == id);
@@ -129,6 +136,9 @@ public sealed class FakeSnippetRepository : ISnippetRepository
         }
         return Task.CompletedTask;
     }
+
+    public Task<IReadOnlyList<Snippet>> GetAllAsync(CancellationToken cancellationToken = default)
+        => Task.FromResult<IReadOnlyList<Snippet>>(_snippets.Where(s => !s.IsInTrash).ToList());
 
     public Task<IReadOnlyList<Snippet>> GetAllActiveAsync(CancellationToken cancellationToken = default)
         => Task.FromResult<IReadOnlyList<Snippet>>(_snippets.Where(s => s.IsActive && !s.IsInTrash).ToList());

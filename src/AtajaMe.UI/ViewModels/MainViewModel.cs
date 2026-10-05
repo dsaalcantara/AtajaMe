@@ -290,16 +290,16 @@ public sealed class MainViewModel : ViewModelBase
             var folders = await _getFoldersUseCase.GetAllAsync();
             _allCachedFolders = folders.ToList();
 
-            var active = await _getSnippetsUseCase.GetAllActiveAsync();
+            var library = await _getSnippetsUseCase.GetAllAsync();
             var trash = await _getSnippetsUseCase.GetTrashAsync();
-            _allCachedSnippets = active.Concat(trash).ToList();
+            _allCachedSnippets = library.Concat(trash).ToList();
 
             UpdateFolderTree();
             Editor.UpdateFolders(_allCachedFolders);
             UpdateCounts();
             ApplyFilter();
 
-            StatusMessage = $"Biblioteca cargada: {_allCachedSnippets.Count(s => !s.IsInTrash)} atajos activos";
+            StatusMessage = $"Biblioteca cargada: {_allCachedSnippets.Count(s => !s.IsInTrash)} atajos";
         }
         catch (Exception ex)
         {
@@ -484,7 +484,10 @@ public sealed class MainViewModel : ViewModelBase
 
     private async Task ExecuteRestoreSnippetAsync(object? parameter)
     {
-        var targetId = (parameter as SnippetItemViewModel)?.Id ?? SelectedSnippet?.Id;
+        var targetId = (parameter as SnippetItemViewModel)?.Id ??
+                       (parameter as SnippetEditorViewModel)?.Id ??
+                       SelectedSnippet?.Id ??
+                       Editor.Id;
         if (!targetId.HasValue)
         {
             return;
@@ -494,6 +497,19 @@ public sealed class MainViewModel : ViewModelBase
         {
             await _restoreSnippetUseCase.ExecuteAsync(targetId.Value);
             await LoadDataAsync();
+            var restored = DisplayedSnippets.FirstOrDefault(s => s.Id == targetId.Value);
+            if (restored != null)
+            {
+                SelectedSnippet = restored;
+            }
+            else
+            {
+                var dto = _allCachedSnippets.FirstOrDefault(s => s.Id == targetId.Value);
+                if (dto != null)
+                {
+                    Editor.LoadSnippet(dto);
+                }
+            }
             StatusMessage = "Atajo restaurado con éxito";
         }
         catch (Exception ex)
@@ -816,13 +832,20 @@ public sealed class MainViewModel : ViewModelBase
                 StatusMessage = $"Atajo '{updated.Code}' guardado con éxito";
             }
         }
+        catch (SnippetInTrashException)
+        {
+            editor.ErrorMessage = $"El código '{editor.Code}' ya existe en la Papelera de reciclaje. Puedes recuperarlo desde la sección 'Papelera'.";
+            StatusMessage = editor.ErrorMessage;
+        }
         catch (DuplicateSnippetCodeException)
         {
             editor.ErrorMessage = $"El código '{editor.Code}' ya está siendo utilizado por otro atajo.";
+            StatusMessage = editor.ErrorMessage;
         }
         catch (Exception ex)
         {
             editor.ErrorMessage = ex.Message;
+            StatusMessage = $"Error al guardar: {ex.Message}";
         }
     }
 

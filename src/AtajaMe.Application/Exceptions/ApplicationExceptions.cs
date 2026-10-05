@@ -22,6 +22,17 @@ public class DuplicateSnippetCodeException : Exception
     }
 }
 
+public class SnippetInTrashException : DuplicateSnippetCodeException
+{
+    public Guid SnippetId { get; }
+
+    public SnippetInTrashException(string code, Guid snippetId)
+        : base(code)
+    {
+        SnippetId = snippetId;
+    }
+}
+
 public class FolderNotFoundException : Exception
 {
     public Guid FolderId { get; }

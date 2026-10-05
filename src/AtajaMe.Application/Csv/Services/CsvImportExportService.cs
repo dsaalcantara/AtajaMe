@@ -22,7 +22,7 @@ public sealed class CsvImportExportService : ICsvImportExportService
 
     public async Task ExportAllAsync(TextWriter writer, CancellationToken cancellationToken = default)
     {
-        var snippets = await _snippetRepository.GetAllActiveAsync(cancellationToken);
+        var snippets = await _snippetRepository.GetAllAsync(cancellationToken);
         var folderPathMap = await BuildFolderPathMapAsync(cancellationToken);
 
         var rows = snippets.Select(s => MapToRow(s, folderPathMap));

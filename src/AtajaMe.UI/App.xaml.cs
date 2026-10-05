@@ -312,6 +312,17 @@ public partial class App : System.Windows.Application
     }
     catch (Exception ex)
     {
+        try
+        {
+            var appData = System.IO.Path.Combine(
+                Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+                "AtajaMe");
+            System.IO.Directory.CreateDirectory(appData);
+            var logPath = System.IO.Path.Combine(appData, "startup_error.log");
+            System.IO.File.WriteAllText(logPath, ex.ToString());
+        }
+        catch { }
+
         System.Windows.MessageBox.Show(
             $"Ocurrió un error al iniciar AtajaMe:\n\n{ex.Message}\n\nDetalles:\n{ex.StackTrace}",
             "Error en AtajaMe",
