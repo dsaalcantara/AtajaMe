@@ -56,7 +56,28 @@ public sealed class FocusTracker : IFocusTracker
         }
 
         var currentWindow = GetActiveWindowHandle();
-        return currentWindow != originalWindowHandle;
+        if (currentWindow == originalWindowHandle)
+        {
+            return false;
+        }
+
+        if (currentWindow == IntPtr.Zero)
+        {
+            return true;
+        }
+
+        // Si el identificador de ventana cambió pero sigue perteneciendo al mismo proceso
+        // (por ejemplo, al teclear '@' muchas aplicaciones abren un menú o popup de autocompletado/menciones),
+        // no considerarlo pérdida de foco entre aplicaciones (RF-10).
+        _win32.GetWindowThreadProcessId(originalWindowHandle, out uint origPid);
+        _win32.GetWindowThreadProcessId(currentWindow, out uint currPid);
+
+        if (origPid != 0 && origPid == currPid)
+        {
+            return false;
+        }
+
+        return true;
     }
 
     public bool IsCurrentAppActive()

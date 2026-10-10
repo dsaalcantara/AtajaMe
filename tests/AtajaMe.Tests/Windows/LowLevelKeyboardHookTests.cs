@@ -88,6 +88,33 @@ public sealed class LowLevelKeyboardHookTests
     }
 
     [Fact]
+    public void HookCallback_WhenAltGrAndKeyArePressed_TranslatesCharacterImmediately()
+    {
+        using var hook = new LowLevelKeyboardHook(_fakeWin32);
+        hook.Start();
+
+        _fakeWin32.KeyToUnicodeMap[0x32] = '@';
+
+        // 1. Pulsa LControl y RMenu (AltGr)
+        _fakeWin32.SimulateHookCallback(Win32Constants.VK_LCONTROL, 29, 0, UIntPtr.Zero, isKeyDown: true);
+        _fakeWin32.SimulateHookCallback(Win32Constants.VK_RMENU, 56, 1, UIntPtr.Zero, isKeyDown: true);
+
+        // 2. Pulsa la tecla '2'
+        _fakeWin32.SimulateHookCallback(0x32, 3, 0x20, UIntPtr.Zero, isKeyDown: true);
+
+        var reader = hook.KeyEvents;
+        Assert.True(reader.TryRead(out var ctrlEvent));
+        Assert.Null(ctrlEvent.Character); // Modificador aislado no traduce
+
+        Assert.True(reader.TryRead(out var rmenuEvent));
+        Assert.Null(rmenuEvent.Character); // Modificador aislado no traduce
+
+        Assert.True(reader.TryRead(out var key2Event));
+        Assert.Equal(0x32, key2Event.VirtualKeyCode);
+        Assert.Equal('@', key2Event.Character); // Traducido en tiempo real en el hook
+    }
+
+    [Fact]
     public void Dispose_StopsHookAndCompletesChannel()
     {
         var hook = new LowLevelKeyboardHook(_fakeWin32);

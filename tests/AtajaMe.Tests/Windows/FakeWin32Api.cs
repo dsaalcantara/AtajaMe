@@ -48,8 +48,16 @@ public sealed class FakeWin32Api : IWin32Api
         return ForegroundWindowHandle;
     }
 
+    public Dictionary<IntPtr, uint> WindowProcessMap { get; } = new();
+
     public uint GetWindowThreadProcessId(IntPtr hWnd, out uint lpdwProcessId)
     {
+        if (WindowProcessMap.TryGetValue(hWnd, out uint mappedPid))
+        {
+            lpdwProcessId = mappedPid;
+            return 1;
+        }
+
         lpdwProcessId = ForegroundProcessId;
         return 1;
     }

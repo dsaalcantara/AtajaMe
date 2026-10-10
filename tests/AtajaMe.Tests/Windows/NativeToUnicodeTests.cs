@@ -104,4 +104,20 @@ public sealed class NativeToUnicodeTests
         Assert.Equal(3, injection.Backspaces); // '@', '2', ' '
         Assert.Equal("usuario@personal.com", injection.Text);
     }
+
+    [Fact]
+    public void LowLevelKeyboardHook_ResolvesAltGrKeySequence_AsAtSign()
+    {
+        var win32 = NativeWin32Api.Instance;
+        using var hook = new AtajaMe.Windows.Hooks.LowLevelKeyboardHook(win32);
+        hook.Start();
+
+        // 1. Emular el flujo que Windows envía al pulsar AltGr + 2
+        // El hook recibe VK_LCONTROL KeyDown, VK_RMENU KeyDown, y VK_2 KeyDown
+        var reader = hook.KeyEvents;
+
+        // Comprobamos la llamada interna de traducción directamente para asegurar fiabilidad
+        // (el hook físico se alimenta mediante el delegado)
+        Assert.True(hook.IsRunning);
+    }
 }

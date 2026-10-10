@@ -58,7 +58,7 @@ public sealed class WindowsTextInjector : ITextInjector
             {
                 try
                 {
-                    await Task.Delay(15, cancellationToken);
+                    await Task.Delay(30, cancellationToken);
                 }
                 catch (OperationCanceledException)
                 {
