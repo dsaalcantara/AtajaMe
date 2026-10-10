@@ -55,10 +55,22 @@ Root: HKCU; Subkey: "Software\Microsoft\Windows\CurrentVersion\Run"; ValueType: 
 Filename: "{app}\{#MyAppExeName}"; Description: "{cm:LaunchProgram,{#StringChange(MyAppName, '&', '&&')}}"; Flags: nowait postinstall skipifsilent
 
 [Code]
-procedure InitializeWizard();
+procedure CurPageChanged(CurPageID: Integer);
+var
+  I: Integer;
 begin
-  // Evitar que las casillas de verificación (checkboxes) se recorten verticalmente en pantallas con escalado DPI (Windows 11)
-  WizardForm.TasksList.MinItemHeight := ScaleY(26);
+  if CurPageID = wpSelectTasks then
+  begin
+    // En Inno Setup, TasksList no se rellena hasta entrar a wpSelectTasks.
+    // Asignar MinItemHeight aquí y forzar el recalculo (re-measure) de cada ítem
+    // garantiza que los checkboxes no se recorten en pantallas con escalado DPI (Windows 11).
+    WizardForm.TasksList.MinItemHeight := ScaleY(30);
+    for I := 0 to WizardForm.TasksList.Items.Count - 1 do
+    begin
+      WizardForm.TasksList.ItemCaption[I] := WizardForm.TasksList.ItemCaption[I] + ' ';
+      WizardForm.TasksList.ItemCaption[I] := TrimRight(WizardForm.TasksList.ItemCaption[I]);
+    end;
+  end;
 end;
 
 function InitializeSetup(): Boolean;
