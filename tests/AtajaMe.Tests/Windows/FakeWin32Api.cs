@@ -115,7 +115,9 @@ public sealed class FakeWin32Api : IWin32Api
         return true;
     }
 
-    public short GetAsyncKeyState(int vKey) => 0;
+    public HashSet<int> PressedKeys { get; } = new();
+
+    public short GetAsyncKeyState(int vKey) => PressedKeys.Contains(vKey) ? unchecked((short)0x8000) : (short)0;
 
     public short GetKeyState(int vKey) => 0;
 

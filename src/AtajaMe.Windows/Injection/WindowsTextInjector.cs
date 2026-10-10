@@ -7,7 +7,8 @@ namespace AtajaMe.Windows.Injection;
 /// <summary>
 /// Inyector de texto nativo mediante SendInput y eventos Unicode.
 /// Borra el código y delimitador disparadores con pulsaciones de retroceso (VK_BACK)
-/// y escribe la expansión sin alterar el portapapeles del sistema (RF-06).
+/// y escribe la expansión directamente mediante eventos Unicode, sin alterar ni depender
+/// del portapapeles del sistema bajo ninguna circunstancia (RF-06, RF-48, D25).
 /// </summary>
 public sealed class WindowsTextInjector : ITextInjector
 {
@@ -32,154 +33,11 @@ public sealed class WindowsTextInjector : ITextInjector
         textToInject ??= string.Empty;
 
         // 1. Liberar virtualmente modificadores que el usuario pudiera estar presionando (ej. Shift tras ':')
-        ReleaseHeldModifiers();
-
-        // 2. Si hay entorno WPF interactivo y el texto tiene contenido, usar pegado atómico
-        // con preservación y restauración inmediata (garantiza inyección instantánea sin colisiones ni repeticiones)
-        if (System.Windows.Application.Current != null && !string.IsNullOrEmpty(textToInject))
-        {
-            bool pasted = await InjectViaClipboardPreservingAsync(backspacesToDelete, textToInject, cancellationToken);
-            if (pasted)
-            {
-                return true;
-            }
-        }
-
-        // 3. Fallback / Entorno sin interfaz: SendInput directo
-        return await InjectViaSendInputDirectAsync(backspacesToDelete, textToInject, cancellationToken);
-    }
-
-    private void ReleaseHeldModifiers()
-    {
-        try
-        {
-            int inputSize = Marshal.SizeOf<INPUT>();
-            var releaseInputs = new List<INPUT>();
-
-            if ((_win32.GetAsyncKeyState(Win32Constants.VK_SHIFT) & 0x8000) != 0)
-            {
-                releaseInputs.Add(CreateKeyInput(Win32Constants.VK_SHIFT, 0, Win32Constants.KEYEVENTF_KEYUP));
-            }
-            if ((_win32.GetAsyncKeyState(Win32Constants.VK_CONTROL) & 0x8000) != 0)
-            {
-                releaseInputs.Add(CreateKeyInput(Win32Constants.VK_CONTROL, 0, Win32Constants.KEYEVENTF_KEYUP));
-            }
-            if ((_win32.GetAsyncKeyState(Win32Constants.VK_MENU) & 0x8000) != 0)
-            {
-                releaseInputs.Add(CreateKeyInput(Win32Constants.VK_MENU, 0, Win32Constants.KEYEVENTF_KEYUP));
-            }
-
-            if (releaseInputs.Count > 0)
-            {
-                var arr = releaseInputs.ToArray();
-                _win32.SendInput((uint)arr.Length, arr, inputSize);
-            }
-        }
-        catch
-        {
-            // Ignorar fallos menores al liberar modificadores
-        }
-    }
-
-    private async Task<bool> InjectViaClipboardPreservingAsync(
-        int backspacesToDelete,
-        string textToInject,
-        CancellationToken cancellationToken)
-    {
-        string? originalClipboard = null;
-        bool hadOriginalText = false;
-
-        try
-        {
-            await System.Windows.Application.Current.Dispatcher.InvokeAsync(() =>
-            {
-                try
-                {
-                    if (System.Windows.Clipboard.ContainsText())
-                    {
-                        originalClipboard = System.Windows.Clipboard.GetText();
-                        hadOriginalText = true;
-                    }
-                    System.Windows.Clipboard.SetText(textToInject);
-                }
-                catch
-                {
-                    // Error de portapapeles ocupado
-                }
-            });
-        }
-        catch
-        {
-            return false;
-        }
+        await ReleaseHeldModifiersAsync(cancellationToken);
 
         int inputSize = Marshal.SizeOf<INPUT>();
 
-        // 1. Borrar código disparador
-        if (backspacesToDelete > 0)
-        {
-            var backInputs = new INPUT[backspacesToDelete * 2];
-            int bIdx = 0;
-            for (int i = 0; i < backspacesToDelete; i++)
-            {
-                backInputs[bIdx++] = CreateKeyInput(Win32Constants.VK_BACK, 0, 0);
-                backInputs[bIdx++] = CreateKeyInput(Win32Constants.VK_BACK, 0, Win32Constants.KEYEVENTF_KEYUP);
-            }
-
-            _win32.SendInput((uint)backInputs.Length, backInputs, inputSize);
-            await Task.Delay(25, cancellationToken);
-        }
-
-        // 2. Enviar Ctrl + V
-        var pasteInputs = new INPUT[4];
-        pasteInputs[0] = CreateKeyInput(Win32Constants.VK_CONTROL, 0, 0);
-        pasteInputs[1] = CreateKeyInput((ushort)'V', 0, 0);
-        pasteInputs[2] = CreateKeyInput((ushort)'V', 0, Win32Constants.KEYEVENTF_KEYUP);
-        pasteInputs[3] = CreateKeyInput(Win32Constants.VK_CONTROL, 0, Win32Constants.KEYEVENTF_KEYUP);
-
-        _win32.SendInput((uint)pasteInputs.Length, pasteInputs, inputSize);
-
-        // 3. Esperar a que la app receptora procese el pegado
-        await Task.Delay(40, cancellationToken);
-
-        // 4. Restaurar de inmediato el portapapeles original del usuario (RF-06)
-        try
-        {
-            await System.Windows.Application.Current.Dispatcher.InvokeAsync(() =>
-            {
-                try
-                {
-                    if (hadOriginalText && originalClipboard != null)
-                    {
-                        System.Windows.Clipboard.SetText(originalClipboard);
-                    }
-                    else
-                    {
-                        System.Windows.Clipboard.Clear();
-                    }
-                }
-                catch
-                {
-                    // Ignorar fallos de restauración
-                }
-            });
-        }
-        catch
-        {
-            // Ignorar
-        }
-
-        return true;
-    }
-
-    private async Task<bool> InjectViaSendInputDirectAsync(
-        int backspacesToDelete,
-        string textToInject,
-        CancellationToken cancellationToken)
-    {
-        int inputSize = Marshal.SizeOf<INPUT>();
-
-        // 1. Borrado de código disparador y delimitador
+        // 2. Borrado de código disparador y delimitador con VK_BACK
         if (backspacesToDelete > 0)
         {
             var backInputs = new INPUT[backspacesToDelete * 2];
@@ -214,7 +72,10 @@ public sealed class WindowsTextInjector : ITextInjector
             return true;
         }
 
-        // 2. Inyección directa carácter a carácter
+        // 3. Inyección directa carácter a carácter mediante eventos Unicode SendInput.
+        // Cumple estrictamente con RF-06, RF-48 y D25: CERO uso o alteración del portapapeles de Windows,
+        // garantizando compatibilidad total con el Portapapeles Avanzado (Win + V) y evitando pegar
+        // accidentalmente datos previos del usuario.
         var normalizedText = textToInject.Replace("\r\n", "\n").Replace('\r', '\n');
         const int chunkSize = 16;
         for (int offset = 0; offset < normalizedText.Length; offset += chunkSize)
@@ -263,6 +124,39 @@ public sealed class WindowsTextInjector : ITextInjector
         }
 
         return true;
+    }
+
+    private async Task ReleaseHeldModifiersAsync(CancellationToken cancellationToken)
+    {
+        try
+        {
+            int inputSize = Marshal.SizeOf<INPUT>();
+            var releaseInputs = new List<INPUT>();
+
+            if ((_win32.GetAsyncKeyState(Win32Constants.VK_SHIFT) & 0x8000) != 0)
+            {
+                releaseInputs.Add(CreateKeyInput(Win32Constants.VK_SHIFT, 0, Win32Constants.KEYEVENTF_KEYUP));
+            }
+            if ((_win32.GetAsyncKeyState(Win32Constants.VK_CONTROL) & 0x8000) != 0)
+            {
+                releaseInputs.Add(CreateKeyInput(Win32Constants.VK_CONTROL, 0, Win32Constants.KEYEVENTF_KEYUP));
+            }
+            if ((_win32.GetAsyncKeyState(Win32Constants.VK_MENU) & 0x8000) != 0)
+            {
+                releaseInputs.Add(CreateKeyInput(Win32Constants.VK_MENU, 0, Win32Constants.KEYEVENTF_KEYUP));
+            }
+
+            if (releaseInputs.Count > 0)
+            {
+                var arr = releaseInputs.ToArray();
+                _win32.SendInput((uint)arr.Length, arr, inputSize);
+                await Task.Delay(5, cancellationToken);
+            }
+        }
+        catch
+        {
+            // Ignorar fallos menores al liberar modificadores
+        }
     }
 
     private static INPUT CreateKeyInput(ushort vk, ushort scan, uint flags)

@@ -96,6 +96,51 @@ public sealed class WindowsTextInjectorTests
 
 
     [Fact]
+    public async Task InjectAsync_WhenModifiersAreHeld_ReleasesModifiersFirst()
+    {
+        var fakeWin32 = new FakeWin32Api();
+        fakeWin32.PressedKeys.Add(Win32Constants.VK_SHIFT);
+        fakeWin32.PressedKeys.Add(Win32Constants.VK_CONTROL);
+
+        var injector = new WindowsTextInjector(fakeWin32);
+        var result = await injector.InjectAsync(1, "x");
+
+        Assert.True(result);
+        Assert.True(fakeWin32.SentInputs.Count >= 3);
+
+        // El primer lote enviado debe liberar los modificadores presionados con KEYEVENTF_KEYUP
+        var releaseBatch = fakeWin32.SentInputs[0];
+        Assert.Equal(2, releaseBatch.Length);
+        Assert.Contains(releaseBatch, inp => inp.u.ki.wVk == Win32Constants.VK_SHIFT && (inp.u.ki.dwFlags & Win32Constants.KEYEVENTF_KEYUP) != 0);
+        Assert.Contains(releaseBatch, inp => inp.u.ki.wVk == Win32Constants.VK_CONTROL && (inp.u.ki.dwFlags & Win32Constants.KEYEVENTF_KEYUP) != 0);
+    }
+
+    [Fact]
+    public async Task InjectAsync_NeverEmitsCtrlVOrInteractsWithClipboard()
+    {
+        var fakeWin32 = new FakeWin32Api();
+        var injector = new WindowsTextInjector(fakeWin32);
+
+        var result = await injector.InjectAsync(2, "Hola Mundo!");
+
+        Assert.True(result);
+
+        // Ningún input enviado debe ser una combinación de Ctrl + V
+        foreach (var batch in fakeWin32.SentInputs)
+        {
+            foreach (var input in batch)
+            {
+                // Si es un evento de teclado por VK, no debe ser 'V' o VK_CONTROL
+                if ((input.u.ki.dwFlags & Win32Constants.KEYEVENTF_UNICODE) == 0)
+                {
+                    Assert.NotEqual((ushort)'V', input.u.ki.wVk);
+                    Assert.NotEqual(Win32Constants.VK_CONTROL, input.u.ki.wVk);
+                }
+            }
+        }
+    }
+
+    [Fact]
     public void InputStruct_In64BitProcess_HasCorrectSizeAndOffset()
     {
         int inputSize = System.Runtime.InteropServices.Marshal.SizeOf<INPUT>();
