@@ -15,7 +15,7 @@ param(
 )
 
 $ErrorActionPreference = "Stop"
-$rootDir = (Get-Item $PSScriptRoot).Parent.FullName
+$rootDir = (Get-Item -LiteralPath $PSScriptRoot).Parent.FullName
 
 Write-Host "===========================================================" -ForegroundColor Cyan
 Write-Host "  AtajaMe · Pipeline de Compilación y Empaquetado" -ForegroundColor Cyan
@@ -88,9 +88,9 @@ if ($LASTEXITCODE -ne 0) {
 }
 
 $outputExe = Join-Path $PSScriptRoot "output\AtajaMe_Setup.exe"
-if (Test-Path $outputExe) {
-    $item = Get-Item $outputExe
-    $hash = (Get-FileHash $outputExe -Algorithm SHA256).Hash
+if (Test-Path -LiteralPath $outputExe) {
+    $item = Get-Item -LiteralPath $outputExe
+    $hash = (Get-FileHash -LiteralPath $outputExe -Algorithm SHA256).Hash
     $sizeMB = [math]::Round($item.Length / 1MB, 2)
 
     Write-Host "`n===========================================================" -ForegroundColor Green
