@@ -36,41 +36,110 @@ RestartApplications=no
 [Languages]
 Name: "spanish"; MessagesFile: "compiler:Languages\Spanish.isl"
 
-[Tasks]
-Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{cm:AdditionalIcons}"; Flags: unchecked
-Name: "startup"; Description: "Iniciar AtajaMe con Windows (en segundo plano)"; GroupDescription: "Inicio de Windows:"; Flags: checkedonce
 
 [Files]
 Source: "..\publish\win-x64\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
 
 [Icons]
 Name: "{autoprograms}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"; IconFilename: "{app}\{#MyAppExeName}"
-Name: "{autodesktop}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"; IconFilename: "{app}\{#MyAppExeName}"; Tasks: desktopicon
+Name: "{autodesktop}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"; IconFilename: "{app}\{#MyAppExeName}"; Check: ShouldCreateDesktopIcon
 
 [Registry]
 ; Inicio automático en Windows en segundo plano / minimizado (RF-33)
-Root: HKCU; Subkey: "Software\Microsoft\Windows\CurrentVersion\Run"; ValueType: string; ValueName: "{#MyAppName}"; ValueData: """{app}\{#MyAppExeName}"" --minimized"; Flags: uninsdeletevalue; Tasks: startup
+Root: HKCU; Subkey: "Software\Microsoft\Windows\CurrentVersion\Run"; ValueType: string; ValueName: "{#MyAppName}"; ValueData: """{app}\{#MyAppExeName}"" --minimized"; Flags: uninsdeletevalue; Check: ShouldEnableStartup
 
 [Run]
 Filename: "{app}\{#MyAppExeName}"; Description: "{cm:LaunchProgram,{#StringChange(MyAppName, '&', '&&')}}"; Flags: nowait postinstall skipifsilent
 
 [Code]
-procedure CurPageChanged(CurPageID: Integer);
 var
-  I: Integer;
+  TasksCustomPage: TWizardPage;
+  DesktopCheckBox: TNewCheckBox;
+  StartupCheckBox: TNewCheckBox;
+
+function ShouldCreateDesktopIcon(): Boolean;
 begin
-  if CurPageID = wpSelectTasks then
-  begin
-    // En Inno Setup, TasksList no se rellena hasta entrar a wpSelectTasks.
-    // Asignar MinItemHeight aquí y forzar el recalculo (re-measure) de cada ítem
-    // garantiza que los checkboxes no se recorten en pantallas con escalado DPI (Windows 11).
-    WizardForm.TasksList.MinItemHeight := ScaleY(30);
-    for I := 0 to WizardForm.TasksList.Items.Count - 1 do
-    begin
-      WizardForm.TasksList.ItemCaption[I] := WizardForm.TasksList.ItemCaption[I] + ' ';
-      WizardForm.TasksList.ItemCaption[I] := TrimRight(WizardForm.TasksList.ItemCaption[I]);
-    end;
-  end;
+  Result := DesktopCheckBox.Checked;
+end;
+
+function ShouldEnableStartup(): Boolean;
+begin
+  Result := StartupCheckBox.Checked;
+end;
+
+procedure InitializeWizard();
+var
+  LblDesc: TNewStaticText;
+  LblGroupIcons: TNewStaticText;
+  LblGroupStartup: TNewStaticText;
+  CurrentTop: Integer;
+begin
+  // Creamos la página personalizada de tareas usando controles independientes TNewCheckBox.
+  // Esto sustituye al componente TNewCheckListBox de Inno Setup, cuyo dibujado interno
+  // recorta el borde superior de las casillas temáticas en Windows 11 con escalado DPI.
+  TasksCustomPage := CreateCustomPage(wpSelectDir,
+    'Seleccione las Tareas Adicionales',
+    '¿Qué tareas adicionales deben realizarse?');
+
+  CurrentTop := ScaleY(8);
+
+  LblDesc := TNewStaticText.Create(TasksCustomPage);
+  LblDesc.Parent := TasksCustomPage.Surface;
+  LblDesc.Left := 0;
+  LblDesc.Top := CurrentTop;
+  LblDesc.Width := TasksCustomPage.SurfaceWidth;
+  LblDesc.WordWrap := True;
+  LblDesc.Caption := 'Seleccione las tareas adicionales que desea que se realicen durante la instalación de AtajaMe y, a continuación, haga clic en Siguiente.';
+  LblDesc.AdjustHeight;
+
+  CurrentTop := CurrentTop + LblDesc.Height + ScaleY(20);
+
+  LblGroupIcons := TNewStaticText.Create(TasksCustomPage);
+  LblGroupIcons.Parent := TasksCustomPage.Surface;
+  LblGroupIcons.Left := 0;
+  LblGroupIcons.Top := CurrentTop;
+  LblGroupIcons.Caption := 'Accesos directos adicionales:';
+  LblGroupIcons.Font.Style := [fsBold];
+
+  CurrentTop := CurrentTop + LblGroupIcons.Height + ScaleY(8);
+
+  DesktopCheckBox := TNewCheckBox.Create(TasksCustomPage);
+  DesktopCheckBox.Parent := TasksCustomPage.Surface;
+  DesktopCheckBox.Left := ScaleX(10);
+  DesktopCheckBox.Top := CurrentTop;
+  DesktopCheckBox.Width := TasksCustomPage.SurfaceWidth - ScaleX(10);
+  DesktopCheckBox.Height := ScaleY(24);
+  DesktopCheckBox.Caption := 'Crear un acceso directo en el escritorio';
+  DesktopCheckBox.Checked := False;
+
+  CurrentTop := CurrentTop + DesktopCheckBox.Height + ScaleY(16);
+
+  LblGroupStartup := TNewStaticText.Create(TasksCustomPage);
+  LblGroupStartup.Parent := TasksCustomPage.Surface;
+  LblGroupStartup.Left := 0;
+  LblGroupStartup.Top := CurrentTop;
+  LblGroupStartup.Caption := 'Inicio de Windows:';
+  LblGroupStartup.Font.Style := [fsBold];
+
+  CurrentTop := CurrentTop + LblGroupStartup.Height + ScaleY(8);
+
+  StartupCheckBox := TNewCheckBox.Create(TasksCustomPage);
+  StartupCheckBox.Parent := TasksCustomPage.Surface;
+  StartupCheckBox.Left := ScaleX(10);
+  StartupCheckBox.Top := CurrentTop;
+  StartupCheckBox.Width := TasksCustomPage.SurfaceWidth - ScaleX(10);
+  StartupCheckBox.Height := ScaleY(24);
+  StartupCheckBox.Caption := 'Iniciar AtajaMe con Windows (en segundo plano)';
+  StartupCheckBox.Checked := True;
+end;
+
+function ShouldSkipPage(PageID: Integer): Boolean;
+begin
+  // Omitimos la página wpSelectTasks original de Inno Setup
+  if PageID = wpSelectTasks then
+    Result := True
+  else
+    Result := False;
 end;
 
 function InitializeSetup(): Boolean;
