@@ -145,6 +145,10 @@ public sealed class WindowsTextInjector : ITextInjector
             {
                 releaseInputs.Add(CreateKeyInput(Win32Constants.VK_MENU, 0, Win32Constants.KEYEVENTF_KEYUP));
             }
+            if ((_win32.GetAsyncKeyState(Win32Constants.VK_RMENU) & 0x8000) != 0)
+            {
+                releaseInputs.Add(CreateKeyInput(Win32Constants.VK_RMENU, 0, Win32Constants.KEYEVENTF_KEYUP));
+            }
 
             if (releaseInputs.Count > 0)
             {

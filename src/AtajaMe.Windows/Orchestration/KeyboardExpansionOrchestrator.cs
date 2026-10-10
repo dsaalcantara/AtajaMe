@@ -303,10 +303,7 @@ public sealed class KeyboardExpansionOrchestrator : IKeyboardExpansionOrchestrat
         }
 
         // Ignorar modificadores aislados
-        if (keyEvent.VirtualKeyCode is Win32Constants.VK_SHIFT
-            or Win32Constants.VK_CONTROL
-            or Win32Constants.VK_MENU
-            or Win32Constants.VK_CAPITAL)
+        if (IsModifierKey(keyEvent.VirtualKeyCode))
         {
             return null;
         }
@@ -317,18 +314,54 @@ public sealed class KeyboardExpansionOrchestrator : IKeyboardExpansionOrchestrat
             _win32.GetKeyboardState(keyboardState);
 
             // Sincronizar modificadores físicos globales en worker threads (Shift para ':', AltGr para '@', etc.)
-            if ((_win32.GetAsyncKeyState(Win32Constants.VK_SHIFT) & 0x8000) != 0)
+            bool isLShift = (_win32.GetAsyncKeyState(Win32Constants.VK_LSHIFT) & 0x8000) != 0;
+            bool isRShift = (_win32.GetAsyncKeyState(Win32Constants.VK_RSHIFT) & 0x8000) != 0;
+            bool isShift = ((_win32.GetAsyncKeyState(Win32Constants.VK_SHIFT) & 0x8000) != 0) || isLShift || isRShift;
+
+            if (isShift)
             {
                 keyboardState[Win32Constants.VK_SHIFT] = 0x80;
+                if (isLShift) keyboardState[Win32Constants.VK_LSHIFT] = 0x80;
+                if (isRShift) keyboardState[Win32Constants.VK_RSHIFT] = 0x80;
             }
-            if ((_win32.GetAsyncKeyState(Win32Constants.VK_CONTROL) & 0x8000) != 0)
+
+            bool isLMenu = (_win32.GetAsyncKeyState(Win32Constants.VK_LMENU) & 0x8000) != 0;
+            bool isRMenu = (_win32.GetAsyncKeyState(Win32Constants.VK_RMENU) & 0x8000) != 0;
+            bool altDownFlag = (keyEvent.Flags & 0x20) != 0; // LLKHF_ALTDOWN
+            bool isMenu = ((_win32.GetAsyncKeyState(Win32Constants.VK_MENU) & 0x8000) != 0) || isLMenu || isRMenu || altDownFlag;
+
+            bool isLControl = (_win32.GetAsyncKeyState(Win32Constants.VK_LCONTROL) & 0x8000) != 0;
+            bool isRControl = (_win32.GetAsyncKeyState(Win32Constants.VK_RCONTROL) & 0x8000) != 0;
+            bool isControl = ((_win32.GetAsyncKeyState(Win32Constants.VK_CONTROL) & 0x8000) != 0) || isLControl || isRControl;
+
+            // En Windows, la tecla física AltGr es VK_RMENU.
+            // Para ToUnicodeEx y layouts europeos/españoles, AltGr equivale a Control + Menu simultáneos.
+            bool isAltGr = isRMenu || (isControl && isMenu);
+
+            if (isAltGr)
             {
                 keyboardState[Win32Constants.VK_CONTROL] = 0x80;
-            }
-            if ((_win32.GetAsyncKeyState(Win32Constants.VK_MENU) & 0x8000) != 0)
-            {
+                keyboardState[Win32Constants.VK_LCONTROL] = 0x80;
                 keyboardState[Win32Constants.VK_MENU] = 0x80;
+                keyboardState[Win32Constants.VK_RMENU] = 0x80;
             }
+            else
+            {
+                if (isControl)
+                {
+                    keyboardState[Win32Constants.VK_CONTROL] = 0x80;
+                    if (isLControl) keyboardState[Win32Constants.VK_LCONTROL] = 0x80;
+                    if (isRControl) keyboardState[Win32Constants.VK_RCONTROL] = 0x80;
+                }
+
+                if (isMenu)
+                {
+                    keyboardState[Win32Constants.VK_MENU] = 0x80;
+                    if (isLMenu) keyboardState[Win32Constants.VK_LMENU] = 0x80;
+                    if (isRMenu) keyboardState[Win32Constants.VK_RMENU] = 0x80;
+                }
+            }
+
             if ((_win32.GetKeyState(Win32Constants.VK_CAPITAL) & 0x0001) != 0)
             {
                 keyboardState[Win32Constants.VK_CAPITAL] = 0x01;
@@ -336,7 +369,7 @@ public sealed class KeyboardExpansionOrchestrator : IKeyboardExpansionOrchestrat
 
             var sb = new StringBuilder(4);
             var hWnd = _focusTracker.GetActiveWindowHandle();
-            uint threadId = _win32.GetWindowThreadProcessId(hWnd, out _);
+            uint threadId = hWnd != IntPtr.Zero ? _win32.GetWindowThreadProcessId(hWnd, out _) : 0;
             var hkl = _win32.GetKeyboardLayout(threadId);
 
             int res = _win32.ToUnicodeEx(
@@ -363,6 +396,22 @@ public sealed class KeyboardExpansionOrchestrator : IKeyboardExpansionOrchestrat
         }
 
         return null;
+    }
+
+    private static bool IsModifierKey(int vk)
+    {
+        return vk is Win32Constants.VK_SHIFT
+            or Win32Constants.VK_LSHIFT
+            or Win32Constants.VK_RSHIFT
+            or Win32Constants.VK_CONTROL
+            or Win32Constants.VK_LCONTROL
+            or Win32Constants.VK_RCONTROL
+            or Win32Constants.VK_MENU
+            or Win32Constants.VK_LMENU
+            or Win32Constants.VK_RMENU
+            or Win32Constants.VK_CAPITAL
+            or Win32Constants.VK_LWIN
+            or Win32Constants.VK_RWIN;
     }
 
     private static bool IsNavigationOrResetKey(int vk)

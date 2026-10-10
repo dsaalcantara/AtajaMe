@@ -40,6 +40,14 @@ public static class Win32Constants
     public const int VK_CONTROL = 0x11;
     public const int VK_MENU = 0x12; // Alt
     public const int VK_CAPITAL = 0x14; // Caps Lock
+    public const int VK_LSHIFT = 0xA0;
+    public const int VK_RSHIFT = 0xA1;
+    public const int VK_LCONTROL = 0xA2;
+    public const int VK_RCONTROL = 0xA3;
+    public const int VK_LMENU = 0xA4;
+    public const int VK_RMENU = 0xA5; // AltGr en distribuciones que lo emplean
+    public const int VK_LWIN = 0x5B;
+    public const int VK_RWIN = 0x5C;
 
     /// <summary>
     /// Firma especial 'ATAJ' (0x4154414A) colocada en dwExtraInfo para distinguir
