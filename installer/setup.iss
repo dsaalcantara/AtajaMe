@@ -38,7 +38,7 @@ Name: "spanish"; MessagesFile: "compiler:Languages\Spanish.isl"
 
 [Tasks]
 Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{cm:AdditionalIcons}"; Flags: unchecked
-Name: "startup"; Description: "Iniciar AtajaMe automáticamente al iniciar sesión en Windows (en segundo plano)"; GroupDescription: "Inicio de Windows:"; Flags: checkedonce
+Name: "startup"; Description: "Iniciar AtajaMe con Windows (en segundo plano)"; GroupDescription: "Inicio de Windows:"; Flags: checkedonce
 
 [Files]
 Source: "..\publish\win-x64\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
@@ -55,6 +55,12 @@ Root: HKCU; Subkey: "Software\Microsoft\Windows\CurrentVersion\Run"; ValueType: 
 Filename: "{app}\{#MyAppExeName}"; Description: "{cm:LaunchProgram,{#StringChange(MyAppName, '&', '&&')}}"; Flags: nowait postinstall skipifsilent
 
 [Code]
+procedure InitializeWizard();
+begin
+  // Evitar que las casillas de verificación (checkboxes) se recorten verticalmente en pantallas con escalado DPI (Windows 11)
+  WizardForm.TasksList.MinItemHeight := ScaleY(26);
+end;
+
 function InitializeSetup(): Boolean;
 var
   ErrorCode: Integer;
