@@ -140,6 +140,19 @@ public sealed class KeyboardExpansionOrchestrator : IKeyboardExpansionOrchestrat
             return;
         }
 
+        // Si se presiona una combinación con Control que no sea AltGr (ej. Ctrl+C, Ctrl+V, Ctrl+Z, Ctrl+A),
+        // resetear inmediatamente el búfer efímero para evitar estados corruptos
+        bool isRMenu = (_win32.GetAsyncKeyState(Win32Constants.VK_RMENU) & 0x8000) != 0;
+        bool isCtrl = (_win32.GetAsyncKeyState(Win32Constants.VK_CONTROL) & 0x8000) != 0;
+        bool isMenu = (_win32.GetAsyncKeyState(Win32Constants.VK_MENU) & 0x8000) != 0;
+        bool isAltGr = isRMenu || (isCtrl && isMenu);
+
+        if (isCtrl && !isAltGr)
+        {
+            _engine.ResetBuffer();
+            return;
+        }
+
         // Si la ventana activa pertenece a AtajaMe, no capturar ni expandir nada en la propia aplicación
         if (_focusTracker.IsCurrentAppActive())
         {
@@ -394,13 +407,14 @@ public sealed class KeyboardExpansionOrchestrator : IKeyboardExpansionOrchestrat
                     hkl);
             }
 
-            if (res == 1)
+            if (res >= 1 && sb.Length > 0)
             {
-                return sb[0];
-            }
-            if (res > 1 && sb.Length > 0)
-            {
-                return sb[sb.Length - 1];
+                char ch = sb[sb.Length - 1];
+                if (char.IsControl(ch) && ch != '\b' && ch != '\t' && ch != '\n' && ch != '\r')
+                {
+                    return null;
+                }
+                return ch;
             }
         }
         catch

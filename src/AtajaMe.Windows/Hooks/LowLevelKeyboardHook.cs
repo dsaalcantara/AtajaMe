@@ -242,8 +242,15 @@ public sealed class LowLevelKeyboardHook : IKeyboardHook
                 res = _win32.ToUnicodeEx(vkCode, scanCode, keyboardState, sb, sb.Capacity, 0, hkl);
             }
 
-            if (res == 1) return sb[0];
-            if (res > 1 && sb.Length > 0) return sb[sb.Length - 1];
+            if (res >= 1 && sb.Length > 0)
+            {
+                char ch = sb[sb.Length - 1];
+                if (char.IsControl(ch) && ch != '\b' && ch != '\t' && ch != '\n' && ch != '\r')
+                {
+                    return null;
+                }
+                return ch;
+            }
         }
         catch
         {

@@ -32,7 +32,7 @@ public sealed class WindowsTextInjector : ITextInjector
         backspacesToDelete = Math.Max(0, backspacesToDelete);
         textToInject ??= string.Empty;
 
-        // 1. Liberar virtualmente modificadores que el usuario pudiera estar presionando (ej. Shift tras ':')
+        // 1. Liberar virtualmente modificadores que el usuario pudiera tener pulsados (Shift, Ctrl, Alt, AltGr)
         await ReleaseHeldModifiersAsync(cancellationToken);
 
         int inputSize = Marshal.SizeOf<INPUT>();
@@ -58,7 +58,10 @@ public sealed class WindowsTextInjector : ITextInjector
             {
                 try
                 {
-                    await Task.Delay(40, cancellationToken);
+                    // Pausa proporcional a los caracteres borrados para asegurar que el control receptor
+                    // haya procesado todas las eliminaciones antes de recibir el nuevo texto
+                    int backspaceDelay = Math.Clamp(backspacesToDelete * 8, 40, 100);
+                    await Task.Delay(backspaceDelay, cancellationToken);
                 }
                 catch (OperationCanceledException)
                 {
@@ -73,11 +76,12 @@ public sealed class WindowsTextInjector : ITextInjector
         }
 
         // 3. Inyección directa carácter a carácter mediante eventos Unicode SendInput.
-        // Cumple estrictamente con RF-06, RF-48 y D25: CERO uso o alteración del portapapeles de Windows,
-        // garantizando compatibilidad total con el Portapapeles Avanzado (Win + V) y evitando pegar
-        // accidentalmente datos previos del usuario.
+        // Cumple estrictamente con RF-06, RF-48 y D25: CERO uso o alteración del portapapeles de Windows.
+        // Se utilizan micro-lotes de 2 caracteres con cadencia controlada (4 ms) para garantizar
+        // que controles asíncronos en Windows 11 (como el nuevo Bloc de notas) procesen limpiamente
+        // los eventos KeyDown y KeyUp, evitando que se active la autorepetición física de teclas.
         var normalizedText = textToInject.Replace("\r\n", "\n").Replace('\r', '\n');
-        const int chunkSize = 16;
+        const int chunkSize = 2;
         for (int offset = 0; offset < normalizedText.Length; offset += chunkSize)
         {
             if (cancellationToken.IsCancellationRequested)
@@ -110,17 +114,24 @@ public sealed class WindowsTextInjector : ITextInjector
                 return false;
             }
 
-            if (offset + chunkSize < normalizedText.Length)
+            try
             {
-                try
-                {
-                    await Task.Delay(2, cancellationToken);
-                }
-                catch (OperationCanceledException)
-                {
-                    return false;
-                }
+                await Task.Delay(4, cancellationToken);
             }
+            catch (OperationCanceledException)
+            {
+                return false;
+            }
+        }
+
+        // Breve pausa final de drenado para asegurar que Windows procese el último KeyUp
+        try
+        {
+            await Task.Delay(15, cancellationToken);
+        }
+        catch (OperationCanceledException)
+        {
+            return false;
         }
 
         return true;
@@ -133,35 +144,33 @@ public sealed class WindowsTextInjector : ITextInjector
             int inputSize = Marshal.SizeOf<INPUT>();
             var releaseInputs = new List<INPUT>();
 
-            // Comprobar si AltGr está presionado (VK_RMENU o combinación Ctrl+Alt).
-            // Si AltGr está activo físicamente, no enviamos KEYUPs de Ctrl/Alt para no corromper el driver de Windows.
-            bool isRMenu = (_win32.GetAsyncKeyState(Win32Constants.VK_RMENU) & 0x8000) != 0;
-            bool isCtrl = (_win32.GetAsyncKeyState(Win32Constants.VK_CONTROL) & 0x8000) != 0;
-            bool isMenu = (_win32.GetAsyncKeyState(Win32Constants.VK_MENU) & 0x8000) != 0;
-            bool isAltGr = isRMenu || (isCtrl && isMenu);
-
+            // Si cualquier tecla modificadora está activa en el sistema, enviamos KeyUp para evitar que
+            // Backspace se convierta en Ctrl+Backspace (borrado de palabra) o Alt+Backspace (Deshacer)
             if ((_win32.GetAsyncKeyState(Win32Constants.VK_SHIFT) & 0x8000) != 0)
             {
                 releaseInputs.Add(CreateKeyInput(Win32Constants.VK_SHIFT, 0, Win32Constants.KEYEVENTF_KEYUP));
             }
 
-            if (!isAltGr)
+            if ((_win32.GetAsyncKeyState(Win32Constants.VK_CONTROL) & 0x8000) != 0)
             {
-                if (isCtrl)
-                {
-                    releaseInputs.Add(CreateKeyInput(Win32Constants.VK_CONTROL, 0, Win32Constants.KEYEVENTF_KEYUP));
-                }
-                if (isMenu)
-                {
-                    releaseInputs.Add(CreateKeyInput(Win32Constants.VK_MENU, 0, Win32Constants.KEYEVENTF_KEYUP));
-                }
+                releaseInputs.Add(CreateKeyInput(Win32Constants.VK_CONTROL, 0, Win32Constants.KEYEVENTF_KEYUP));
+            }
+
+            if ((_win32.GetAsyncKeyState(Win32Constants.VK_MENU) & 0x8000) != 0)
+            {
+                releaseInputs.Add(CreateKeyInput(Win32Constants.VK_MENU, 0, Win32Constants.KEYEVENTF_KEYUP));
+            }
+
+            if ((_win32.GetAsyncKeyState(Win32Constants.VK_RMENU) & 0x8000) != 0)
+            {
+                releaseInputs.Add(CreateKeyInput(Win32Constants.VK_RMENU, 0, Win32Constants.KEYEVENTF_KEYUP));
             }
 
             if (releaseInputs.Count > 0)
             {
                 var arr = releaseInputs.ToArray();
                 _win32.SendInput((uint)arr.Length, arr, inputSize);
-                await Task.Delay(5, cancellationToken);
+                await Task.Delay(15, cancellationToken);
             }
         }
         catch

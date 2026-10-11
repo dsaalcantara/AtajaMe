@@ -73,7 +73,7 @@ public sealed class WindowsTextInjectorTests
         var result = await injector.InjectAsync(0, "ñá\n");
 
         Assert.True(result);
-        var inputs = _fakeWin32.SentInputs[0];
+        var inputs = _fakeWin32.SentInputs.SelectMany(b => b).ToArray();
         Assert.Equal(6, inputs.Length); // 3 caracteres * 2
 
         Assert.Equal((ushort)'ñ', inputs[0].u.ki.wScan);
