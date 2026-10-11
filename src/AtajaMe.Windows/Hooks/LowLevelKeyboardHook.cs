@@ -162,6 +162,11 @@ public sealed class LowLevelKeyboardHook : IKeyboardHook
                 break;
             case Win32Constants.VK_RMENU:
                 _isRMenuDown = isDown;
+                if (!isDown)
+                {
+                    // Al soltar AltGr (VK_RMENU), limpiar inmediatamente cualquier residuo de LCONTROL sintetizado
+                    _isLControlDown = false;
+                }
                 break;
         }
     }
@@ -239,6 +244,16 @@ public sealed class LowLevelKeyboardHook : IKeyboardHook
             if (res == 0)
             {
                 // Fallback sin flag 4 si la API nativa de Windows no traduce con flag 4
+                res = _win32.ToUnicodeEx(vkCode, scanCode, keyboardState, sb, sb.Capacity, 0, hkl);
+            }
+
+            // Fallback crítico: si res == 0 y había Control marcado (sin AltGr), reintentar sin Control.
+            // Esto recupera inmediatamente dígitos como 1 y 2 que Windows no traduce si hay residuo de Control tras soltar AltGr.
+            if (res == 0 && keyboardState[Win32Constants.VK_CONTROL] != 0 && !isAltGr)
+            {
+                keyboardState[Win32Constants.VK_CONTROL] = 0;
+                keyboardState[Win32Constants.VK_LCONTROL] = 0;
+                keyboardState[Win32Constants.VK_RCONTROL] = 0;
                 res = _win32.ToUnicodeEx(vkCode, scanCode, keyboardState, sb, sb.Capacity, 0, hkl);
             }
 

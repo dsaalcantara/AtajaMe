@@ -90,5 +90,15 @@ public sealed class SqliteDatabaseInitializer
         await using var command = connection.CreateCommand();
         command.CommandText = schemaSql;
         await command.ExecuteNonQueryAsync(cancellationToken);
+
+        // Migración de datos: reemplazar cualquier prefijo '@' existente por 'c'
+        await using var migrateCommand = connection.CreateCommand();
+        migrateCommand.CommandText = @"
+            UPDATE Snippets 
+            SET Code = 'c' || SUBSTR(Code, 2),
+                UpdatedAt = strftime('%Y-%m-%dT%H:%M:%fZ', 'now')
+            WHERE Code LIKE '@%';
+        ";
+        await migrateCommand.ExecuteNonQueryAsync(cancellationToken);
     }
 }

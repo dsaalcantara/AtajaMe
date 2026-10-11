@@ -250,6 +250,12 @@ public sealed class SnippetEditorViewModel : ViewModelBase
             return false;
         }
 
+        if (Code.Trim().StartsWith("@", StringComparison.Ordinal))
+        {
+            ErrorMessage = "El código del atajo no puede empezar con '@'.";
+            return false;
+        }
+
         if (Content.Length > Snippet.MaxContentLength)
         {
             ErrorMessage = $"El contenido supera el límite máximo de {Snippet.MaxContentLength:N0} caracteres.";

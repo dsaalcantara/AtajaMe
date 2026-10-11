@@ -42,6 +42,17 @@ public class SnippetTests
         Assert.Throws<ArgumentException>(() => Snippet.Create(longCode, "Largo", "Texto"));
     }
 
+    [Theory]
+    [InlineData("@")]
+    [InlineData("@1")]
+    [InlineData("@test")]
+    [InlineData(" @correo ")]
+    public void Create_WithCodeStartingWithAtSign_ShouldThrowArgumentException(string atCode)
+    {
+        var ex = Assert.Throws<ArgumentException>(() => Snippet.Create(atCode, "Nombre", "Contenido"));
+        Assert.Contains("El código del atajo no puede empezar con '@'", ex.Message);
+    }
+
     [Fact]
     public void Create_WithNullContent_ShouldThrowArgumentNullException()
     {

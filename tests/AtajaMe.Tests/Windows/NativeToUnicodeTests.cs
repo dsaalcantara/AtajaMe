@@ -76,8 +76,8 @@ public sealed class NativeToUnicodeTests
         var excludedAppsRepo = new FakeExcludedAppRepository();
         var fakeWin32 = new FakeWin32Api();
 
-        // Mapear tecla con AltGr simulado: emitimos '@', luego '2', luego ' '
-        var snippet = Snippet.Create("@2", "Correo personal 1", "usuario@personal.com");
+        // Mapear tecla con atajo 'c2'
+        var snippet = Snippet.Create("c2", "Correo personal 1", "usuario@personal.com");
         await snippetRepo.AddAsync(snippet);
 
         var engine = new SnippetExpansionEngine(snippetRepo, variableService);
@@ -92,8 +92,8 @@ public sealed class NativeToUnicodeTests
 
         await orchestrator.StartAsync();
 
-        // El usuario teclea '@', '2', ' '
-        hook.EmitKey('@');
+        // El usuario teclea 'c', '2', ' '
+        hook.EmitKey('c');
         hook.EmitKey('2');
         hook.EmitKey(' ');
 
@@ -101,7 +101,7 @@ public sealed class NativeToUnicodeTests
 
         Assert.Single(textInjector.Injections);
         var injection = textInjector.Injections[0];
-        Assert.Equal(3, injection.Backspaces); // '@', '2', ' '
+        Assert.Equal(3, injection.Backspaces); // 'c', '2', ' '
         Assert.Equal("usuario@personal.com", injection.Text);
     }
 

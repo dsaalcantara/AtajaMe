@@ -140,19 +140,6 @@ public sealed class KeyboardExpansionOrchestrator : IKeyboardExpansionOrchestrat
             return;
         }
 
-        // Si se presiona una combinación con Control que no sea AltGr (ej. Ctrl+C, Ctrl+V, Ctrl+Z, Ctrl+A),
-        // resetear inmediatamente el búfer efímero para evitar estados corruptos
-        bool isRMenu = (_win32.GetAsyncKeyState(Win32Constants.VK_RMENU) & 0x8000) != 0;
-        bool isCtrl = (_win32.GetAsyncKeyState(Win32Constants.VK_CONTROL) & 0x8000) != 0;
-        bool isMenu = (_win32.GetAsyncKeyState(Win32Constants.VK_MENU) & 0x8000) != 0;
-        bool isAltGr = isRMenu || (isCtrl && isMenu);
-
-        if (isCtrl && !isAltGr)
-        {
-            _engine.ResetBuffer();
-            return;
-        }
-
         // Si la ventana activa pertenece a AtajaMe, no capturar ni expandir nada en la propia aplicación
         if (_focusTracker.IsCurrentAppActive())
         {
@@ -397,6 +384,22 @@ public sealed class KeyboardExpansionOrchestrator : IKeyboardExpansionOrchestrat
             if (res == 0)
             {
                 // Fallback sin flag 4
+                res = _win32.ToUnicodeEx(
+                    (uint)keyEvent.VirtualKeyCode,
+                    (uint)keyEvent.ScanCode,
+                    keyboardState,
+                    sb,
+                    sb.Capacity,
+                    0,
+                    hkl);
+            }
+
+            // Fallback para dígitos (como 1 y 2) si queda algún residuo de Control tras soltar AltGr
+            if (res == 0 && keyboardState[Win32Constants.VK_CONTROL] != 0 && !isAltGr)
+            {
+                keyboardState[Win32Constants.VK_CONTROL] = 0;
+                keyboardState[Win32Constants.VK_LCONTROL] = 0;
+                keyboardState[Win32Constants.VK_RCONTROL] = 0;
                 res = _win32.ToUnicodeEx(
                     (uint)keyEvent.VirtualKeyCode,
                     (uint)keyEvent.ScanCode,

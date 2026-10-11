@@ -167,6 +167,11 @@ public sealed class Snippet
         {
             throw new ArgumentException($"El código no puede superar los {MaxCodeLength} caracteres.", nameof(code));
         }
+
+        if (code.Trim().StartsWith("@", StringComparison.Ordinal))
+        {
+            throw new ArgumentException("El código del atajo no puede empezar con '@'.", nameof(code));
+        }
     }
 
     private static void ValidateContent(string content)

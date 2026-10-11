@@ -286,6 +286,10 @@ public sealed class CsvImportExportService : ICsvImportExportService
         {
             return $"El código del atajo excede los {Snippet.MaxCodeLength} caracteres.";
         }
+        if (row.Code.Trim().StartsWith("@", StringComparison.Ordinal))
+        {
+            return "El código del atajo no puede empezar con '@'.";
+        }
         if (string.IsNullOrEmpty(row.Content))
         {
             return "El contenido del atajo no puede estar vacío.";
