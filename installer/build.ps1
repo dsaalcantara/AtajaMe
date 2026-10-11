@@ -11,11 +11,22 @@
 
 [CmdletBinding()]
 param(
-    [switch]$SkipTests
+    [switch]$SkipTests,
+    # Versión X.Y.Z. Si se omite, se lee de <Version> en AtajaMe.UI.csproj.
+    [string]$Version
 )
 
 $ErrorActionPreference = "Stop"
 $rootDir = (Get-Item -LiteralPath $PSScriptRoot).Parent.FullName
+
+if (-not $Version) {
+    [xml]$csproj = Get-Content -LiteralPath (Join-Path $rootDir "src\AtajaMe.UI\AtajaMe.UI.csproj")
+    $Version = ($csproj.Project.PropertyGroup | Where-Object { $_.Version } | Select-Object -First 1).Version
+}
+if (-not ($Version -match '^\d+\.\d+\.\d+$')) {
+    Write-Error "Versión no válida: '$Version'. Formato esperado: X.Y.Z"
+}
+Write-Host "-> Versión a empaquetar: $Version" -ForegroundColor DarkCyan
 
 Write-Host "===========================================================" -ForegroundColor Cyan
 Write-Host "  AtajaMe · Pipeline de Compilación y Empaquetado" -ForegroundColor Cyan
@@ -45,6 +56,7 @@ dotnet publish "$rootDir\src\AtajaMe.UI\AtajaMe.UI.csproj" `
     -r win-x64 `
     --self-contained true `
     -o $publishDir `
+    -p:Version=$Version `
     --nologo
 
 if ($LASTEXITCODE -ne 0) {
@@ -81,7 +93,7 @@ if (-not $isccPath) {
 
 Write-Host "-> Usando compilador: $isccPath" -ForegroundColor DarkCyan
 $issFile = Join-Path $PSScriptRoot "setup.iss"
-& $isccPath $issFile
+& $isccPath "/DMyAppVersion=$Version" $issFile
 
 if ($LASTEXITCODE -ne 0) {
     Write-Error "Error durante la compilación con Inno Setup."

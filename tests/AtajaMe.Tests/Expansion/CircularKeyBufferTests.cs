@@ -115,20 +115,20 @@ public class CircularKeyBufferTests
     [Fact]
     public void AutoPurge_ResetOnNewAppend()
     {
-        using var buffer = new CircularKeyBuffer(50, TimeSpan.FromMilliseconds(80));
+        using var buffer = new CircularKeyBuffer(50, TimeSpan.FromMilliseconds(400));
         var purgedFired = new ManualResetEventSlim(false);
 
         buffer.BufferPurged += (_, _) => purgedFired.Set();
 
         buffer.Append('a');
-        Thread.Sleep(40);
-        buffer.Append('b'); // Reinicia el temporizador de 80ms
-        Thread.Sleep(40);
+        Thread.Sleep(250);
+        buffer.Append('b'); // Reinicia el temporizador de 400ms
+        Thread.Sleep(250);  // 500ms desde 'a' (> timeout), pero solo 250ms desde 'b'
 
         Assert.False(buffer.IsEmpty, "El búfer no debería haberse purgado porque se escribió antes de vencer.");
         Assert.Equal("ab", buffer.GetContent());
 
-        var signaled = purgedFired.Wait(TimeSpan.FromMilliseconds(300));
+        var signaled = purgedFired.Wait(TimeSpan.FromMilliseconds(2000));
         Assert.True(signaled);
         Assert.True(buffer.IsEmpty);
     }

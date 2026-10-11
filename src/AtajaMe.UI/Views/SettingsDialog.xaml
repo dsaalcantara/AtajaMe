@@ -225,7 +225,7 @@
                                    Margin="0,0,8,0"
                                    VerticalAlignment="Center"
                                    RenderOptions.BitmapScalingMode="HighQuality" />
-                            <TextBlock Text="AtajaMe · Versión 1.0 (MVP)" FontWeight="Bold" FontSize="15" VerticalAlignment="Center" />
+                            <TextBlock Text="{Binding CurrentVersionText, StringFormat='AtajaMe · Versión {0}'}" FontWeight="Bold" FontSize="15" VerticalAlignment="Center" />
                         </StackPanel>
                         <TextBlock Text="Gestor de atajos y expansión de texto instantáneo para Windows."
                                    FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,0,0,16" />
@@ -236,7 +236,29 @@
 
                         <TextBlock Text="💡 Cómo provocar expansiones" FontWeight="Bold" FontSize="13" Margin="0,0,0,4" />
                         <TextBlock Text="Escribe el código configurado para el atajo en cualquier aplicación compatible y añade un delimitador (Espacio o Tabulador). AtajaMe reemplazará el código inmediatamente."
-                                   FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}" TextWrapping="Wrap" Margin="0,0,0,16" />
+                                   FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}" TextWrapping="Wrap" Margin="0,0,0,20" />
+
+                        <Separator Background="{DynamicResource BorderSubtleBrush}" Margin="0,0,0,16" />
+
+                        <TextBlock Text="🔄 Actualizaciones de la Aplicación" FontWeight="Bold" FontSize="13" Margin="0,0,0,6" />
+                        <TextBlock Text="AtajaMe verifica versiones oficiales publicadas en GitHub Releases."
+                                   FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,0,0,10" />
+
+                        <CheckBox Content="Comprobar actualizaciones automáticamente al iniciar la aplicación"
+                                  IsChecked="{Binding CheckUpdatesOnStartup}"
+                                  Margin="0,0,0,12" />
+
+                        <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                            <Button Content="Buscar Actualizaciones Ahora"
+                                    Command="{Binding CheckUpdatesNowCommand}"
+                                    Style="{StaticResource SecondaryButtonStyle}"
+                                    Padding="12,6"
+                                    Margin="0,0,12,0" />
+                            <TextBlock Text="{Binding CurrentVersionText, StringFormat='Instalada: {0}'}"
+                                       VerticalAlignment="Center"
+                                       FontSize="12"
+                                       Foreground="{DynamicResource TextSecondaryBrush}" />
+                        </StackPanel>
                     </StackPanel>
                 </ScrollViewer>
             </TabItem>

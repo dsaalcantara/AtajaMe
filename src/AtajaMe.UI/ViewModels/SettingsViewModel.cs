@@ -1,4 +1,5 @@
 using System.Collections.ObjectModel;
+using System.Reflection;
 using System.Windows.Input;
 using AtajaMe.Application.Backup.DTOs;
 using AtajaMe.Application.Backup.Services;
@@ -7,7 +8,9 @@ using AtajaMe.Application.ExcludedApplications;
 using AtajaMe.Application.Services;
 using AtajaMe.Application.Settings;
 using AtajaMe.Application.Sync.Services;
+using AtajaMe.Application.Updates;
 using AtajaMe.Application.Variables;
+using AtajaMe.Domain.Updates;
 using AtajaMe.UI.Common;
 using AtajaMe.UI.Services;
 
@@ -21,6 +24,8 @@ public sealed class SettingsViewModel : ViewModelBase
     private readonly IBackupService _backupService;
     private readonly ISyncEngine _syncEngine;
     private readonly ManageExcludedApplicationsUseCase _excludedAppsUseCase;
+    private readonly CheckForUpdatesUseCase _checkForUpdatesUseCase;
+    private readonly IUpdateDownloader _updateDownloader;
     private readonly VariableResolutionOptions? _variableOptions;
 
     private string _theme = "System";
@@ -33,11 +38,15 @@ public sealed class SettingsViewModel : ViewModelBase
     private int _trashRetentionDays = 30;
     private string _defaultDateFormat = "dd/MM/yyyy";
     private string _defaultTimeFormat = "HH:mm";
+    private bool _checkUpdatesOnStartup = true;
 
     private BackupFileInfoDto? _selectedBackup;
     private string _newExcludedProcessName = string.Empty;
     private string _statusMessage = string.Empty;
     private bool _hasPendingConflicts;
+    private bool _isCheckingUpdates;
+
+    public string CurrentVersionText { get; }
 
     public string DefaultDateFormat
     {
@@ -105,6 +114,18 @@ public sealed class SettingsViewModel : ViewModelBase
         set => SetProperty(ref _trashRetentionDays, value);
     }
 
+    public bool CheckUpdatesOnStartup
+    {
+        get => _checkUpdatesOnStartup;
+        set => SetProperty(ref _checkUpdatesOnStartup, value);
+    }
+
+    public bool IsCheckingUpdates
+    {
+        get => _isCheckingUpdates;
+        set => SetProperty(ref _isCheckingUpdates, value);
+    }
+
     public BackupFileInfoDto? SelectedBackup
     {
         get => _selectedBackup;
@@ -138,9 +159,11 @@ public sealed class SettingsViewModel : ViewModelBase
     public ICommand SyncNowCommand { get; }
     public ICommand AddExcludedAppCommand { get; }
     public ICommand RemoveExcludedAppCommand { get; }
+    public ICommand CheckUpdatesNowCommand { get; }
 
     public event Action? RequestClose;
     public event Action? RequestOpenConflictResolution;
+    public event Action<UpdateInfo, IUpdateDownloader>? RequestShowUpdateDialog;
 
     public SettingsViewModel(
         AppSettingsService settingsService,
@@ -149,6 +172,8 @@ public sealed class SettingsViewModel : ViewModelBase
         IBackupService backupService,
         ISyncEngine syncEngine,
         ManageExcludedApplicationsUseCase excludedAppsUseCase,
+        CheckForUpdatesUseCase checkForUpdatesUseCase,
+        IUpdateDownloader updateDownloader,
         VariableResolutionOptions? variableOptions = null)
     {
         _settingsService = settingsService;
@@ -157,7 +182,12 @@ public sealed class SettingsViewModel : ViewModelBase
         _backupService = backupService;
         _syncEngine = syncEngine;
         _excludedAppsUseCase = excludedAppsUseCase;
+        _checkForUpdatesUseCase = checkForUpdatesUseCase;
+        _updateDownloader = updateDownloader;
         _variableOptions = variableOptions;
+
+        var asmVersion = Assembly.GetExecutingAssembly().GetName().Version;
+        CurrentVersionText = asmVersion != null ? $"v{asmVersion.Major}.{asmVersion.Minor}.{asmVersion.Build}" : "v1.0.0";
 
         SaveSettingsCommand = new AsyncRelayCommand(SaveSettingsAsync);
         CreateBackupNowCommand = new AsyncRelayCommand(CreateBackupNowAsync);
@@ -165,6 +195,7 @@ public sealed class SettingsViewModel : ViewModelBase
         SyncNowCommand = new AsyncRelayCommand(SyncNowAsync);
         AddExcludedAppCommand = new AsyncRelayCommand(AddExcludedAppAsync);
         RemoveExcludedAppCommand = new AsyncRelayCommand(RemoveExcludedAppAsync);
+        CheckUpdatesNowCommand = new AsyncRelayCommand(CheckUpdatesNowAsync, () => !IsCheckingUpdates);
     }
 
     public async Task InitializeAsync()
@@ -180,6 +211,7 @@ public sealed class SettingsViewModel : ViewModelBase
         _trashRetentionDays = settings.TrashRetentionDays;
         _defaultDateFormat = settings.DefaultDateFormat;
         _defaultTimeFormat = settings.DefaultTimeFormat;
+        _checkUpdatesOnStartup = settings.CheckUpdatesOnStartup;
 
         OnPropertyChanged(nameof(Theme));
         OnPropertyChanged(nameof(SyncFolderPath));
@@ -191,10 +223,46 @@ public sealed class SettingsViewModel : ViewModelBase
         OnPropertyChanged(nameof(TrashRetentionDays));
         OnPropertyChanged(nameof(DefaultDateFormat));
         OnPropertyChanged(nameof(DefaultTimeFormat));
+        OnPropertyChanged(nameof(CheckUpdatesOnStartup));
 
         await LoadExcludedAppsAsync();
         await LoadBackupsAsync();
         await CheckConflictsAsync();
+    }
+
+    public async Task CheckUpdatesNowAsync()
+    {
+        IsCheckingUpdates = true;
+        StatusMessage = "Buscando actualizaciones en GitHub...";
+        try
+        {
+            var currentVersion = Assembly.GetExecutingAssembly().GetName().Version ?? new Version(1, 0, 0);
+            var update = await _checkForUpdatesUseCase.ExecuteAsync(currentVersion);
+
+            if (update == null)
+            {
+                StatusMessage = "No se pudo conectar con GitHub o no hay releases disponibles.";
+                return;
+            }
+
+            if (update.IsUpdateAvailable)
+            {
+                StatusMessage = $"¡Nueva versión disponible: {update.TagName}!";
+                RequestShowUpdateDialog?.Invoke(update, _updateDownloader);
+            }
+            else
+            {
+                StatusMessage = $"AtajaMe está actualizado (versión actual {CurrentVersionText}).";
+            }
+        }
+        catch (Exception ex)
+        {
+            StatusMessage = $"Error al buscar actualización: {ex.Message}";
+        }
+        finally
+        {
+            IsCheckingUpdates = false;
+        }
     }
 
     public async Task SaveSettingsAsync()
@@ -211,7 +279,8 @@ public sealed class SettingsViewModel : ViewModelBase
                 RecentSnippetsLimit,
                 TrashRetentionDays,
                 DefaultDateFormat,
-                DefaultTimeFormat);
+                DefaultTimeFormat,
+                CheckUpdatesOnStartup);
 
             await _settingsService.SaveSettingsAsync(dto);
             if (_variableOptions != null)

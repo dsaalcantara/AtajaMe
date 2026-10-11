@@ -1,0 +1,51 @@
+name: Publicar Release
+
+# Se ejecuta al subir una etiqueta de versión, p. ej.:
+#   git tag v1.1.0
+#   git push origin v1.1.0
+on:
+  push:
+    tags:
+      - "v*.*.*"
+
+permissions:
+  contents: write # necesario para crear la Release y adjuntar el instalador
+
+jobs:
+  release:
+    runs-on: windows-latest
+
+    steps:
+      - name: Descargar código
+        uses: actions/checkout@v4
+
+      - name: Instalar .NET 8
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "8.0.x"
+
+      - name: Instalar Inno Setup
+        shell: pwsh
+        run: |
+          if (-not (Test-Path "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe")) {
+            choco install innosetup -y --no-progress
+          }
+
+      - name: Obtener versión de la etiqueta
+        id: version
+        shell: pwsh
+        run: |
+          $version = "${{ github.ref_name }}".TrimStart("v")
+          if ($version -notmatch '^\d+\.\d+\.\d+$') { throw "Etiqueta no válida: ${{ github.ref_name }}" }
+          "value=$version" >> $env:GITHUB_OUTPUT
+
+      - name: Pruebas, publicación e instalador
+        shell: pwsh
+        run: ./installer/build.ps1 -Version ${{ steps.version.outputs.value }}
+
+      - name: Crear Release en GitHub
+        uses: softprops/action-gh-release@v2
+        with:
+          name: AtajaMe ${{ github.ref_name }}
+          files: installer/output/AtajaMe_Setup.exe
+          generate_release_notes: true

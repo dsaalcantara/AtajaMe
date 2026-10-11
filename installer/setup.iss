@@ -3,7 +3,11 @@
 ; Cumple con las directrices de AGENTS.md y los requisitos funcionales del MVP
 
 #define MyAppName "AtajaMe"
-#define MyAppVersion "1.0.0"
+; La versión se inyecta desde build.ps1 o GitHub Actions (/DMyAppVersion=X.Y.Z).
+; Este valor solo se usa como respaldo si se compila el .iss manualmente.
+#ifndef MyAppVersion
+  #define MyAppVersion "1.1.0"
+#endif
 #define MyAppPublisher "AtajaMe"
 #define MyAppURL "https://github.com/dsaalcantara/AtajaMe"
 #define MyAppExeName "AtajaMe.exe"

@@ -9,6 +9,8 @@ using AtajaMe.Application.Sync.Services;
 using AtajaMe.Domain.Entities;
 using AtajaMe.Domain.Enums;
 using AtajaMe.Domain.Repositories;
+using AtajaMe.Domain.Updates;
+using AtajaMe.Application.Updates;
 using AtajaMe.UI.Services;
 using AtajaMe.UI.ViewModels;
 
@@ -24,11 +26,15 @@ public sealed class SettingsViewModelTests
     private readonly FakeSyncEngine _syncEngine = new();
     private readonly FakeExcludedAppRepo _excludedRepo = new();
     private readonly ManageExcludedApplicationsUseCase _excludedUseCase;
+    private readonly FakeUpdateChecker _fakeChecker = new();
+    private readonly CheckForUpdatesUseCase _checkForUpdatesUseCase;
+    private readonly FakeUpdateDownloader _fakeDownloader = new();
 
     public SettingsViewModelTests()
     {
         _settingsService = new AppSettingsService(_appSettingsRepo);
         _excludedUseCase = new ManageExcludedApplicationsUseCase(_excludedRepo);
+        _checkForUpdatesUseCase = new CheckForUpdatesUseCase(_fakeChecker);
     }
 
     [Fact]
@@ -43,7 +49,9 @@ public sealed class SettingsViewModelTests
             _themeService,
             _backupService,
             _syncEngine,
-            _excludedUseCase);
+            _excludedUseCase,
+            _checkForUpdatesUseCase,
+            _fakeDownloader);
 
         await vm.InitializeAsync();
 
@@ -63,7 +71,9 @@ public sealed class SettingsViewModelTests
             _themeService,
             _backupService,
             _syncEngine,
-            _excludedUseCase);
+            _excludedUseCase,
+            _checkForUpdatesUseCase,
+            _fakeDownloader);
 
         await vm.InitializeAsync();
 
@@ -90,7 +100,9 @@ public sealed class SettingsViewModelTests
             _themeService,
             _backupService,
             _syncEngine,
-            _excludedUseCase);
+            _excludedUseCase,
+            _checkForUpdatesUseCase,
+            _fakeDownloader);
 
         await vm.InitializeAsync();
 
@@ -178,6 +190,23 @@ public sealed class SettingsViewModelTests
         {
             _apps.RemoveAll(a => a.Id == id);
             return Task.CompletedTask;
+        }
+    }
+
+    private sealed class FakeUpdateChecker : IUpdateChecker
+    {
+        public UpdateInfo? UpdateToReturn { get; set; }
+        public Task<UpdateInfo?> CheckForUpdatesAsync(Version currentVersion, CancellationToken cancellationToken = default)
+            => Task.FromResult(UpdateToReturn);
+    }
+
+    private sealed class FakeUpdateDownloader : IUpdateDownloader
+    {
+        public string ResultPath { get; set; } = @"C:\Temp\AtajaMe_Setup.exe";
+        public Task<string> DownloadInstallerAsync(string downloadUrl, IProgress<double>? progress = null, CancellationToken cancellationToken = default)
+        {
+            progress?.Report(1.0);
+            return Task.FromResult(ResultPath);
         }
     }
 

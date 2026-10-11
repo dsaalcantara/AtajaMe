@@ -1,5 +1,7 @@
 using System.Windows;
 using System.Windows.Forms;
+using AtajaMe.Domain.Updates;
+using AtajaMe.Application.Updates;
 using AtajaMe.UI.ViewModels;
 
 namespace AtajaMe.UI.Views;
@@ -15,8 +17,18 @@ public partial class SettingsDialog : Window
 
         viewModel.RequestClose += () => Close();
         viewModel.RequestOpenConflictResolution += OpenConflictResolutionDialog;
+        viewModel.RequestShowUpdateDialog += ShowUpdateDialog;
 
         Loaded += async (_, _) => await viewModel.InitializeAsync();
+    }
+
+    private void ShowUpdateDialog(UpdateInfo updateInfo, IUpdateDownloader downloader)
+    {
+        var dialog = new UpdateAvailableDialog(updateInfo, downloader)
+        {
+            Owner = this
+        };
+        dialog.ShowDialog();
     }
 
     private void OnBrowseSyncFolderClick(object sender, RoutedEventArgs e)

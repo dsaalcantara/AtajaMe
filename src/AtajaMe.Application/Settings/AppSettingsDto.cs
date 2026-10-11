@@ -12,7 +12,8 @@ public sealed record AppSettingsDto(
     int RecentSnippetsLimit,
     int TrashRetentionDays,
     string DefaultDateFormat = "dd/MM/yyyy",
-    string DefaultTimeFormat = "HH:mm")
+    string DefaultTimeFormat = "HH:mm",
+    bool CheckUpdatesOnStartup = true)
 {
     public static AppSettingsDto Default => new(
         Theme: "System",
@@ -24,7 +25,8 @@ public sealed record AppSettingsDto(
         RecentSnippetsLimit: 10,
         TrashRetentionDays: 30,
         DefaultDateFormat: "dd/MM/yyyy",
-        DefaultTimeFormat: "HH:mm");
+        DefaultTimeFormat: "HH:mm",
+        CheckUpdatesOnStartup: true);
 }
 
 public sealed class AppSettingsService
@@ -39,6 +41,7 @@ public sealed class AppSettingsService
     public const string KeyTrashRetention = "TrashRetentionDays";
     public const string KeyDefaultDateFormat = "DefaultDateFormat";
     public const string KeyDefaultTimeFormat = "DefaultTimeFormat";
+    public const string KeyCheckUpdatesOnStartup = "CheckUpdatesOnStartup";
 
     private readonly IAppSettingsRepository _repository;
 
@@ -61,6 +64,7 @@ public sealed class AppSettingsService
         var trashRetention = dict.TryGetValue(KeyTrashRetention, out var tr) && int.TryParse(tr, out var tri) ? tri : 30;
         var dateFormat = dict.TryGetValue(KeyDefaultDateFormat, out var df) && !string.IsNullOrWhiteSpace(df) ? df : "dd/MM/yyyy";
         var timeFormat = dict.TryGetValue(KeyDefaultTimeFormat, out var tf) && !string.IsNullOrWhiteSpace(tf) ? tf : "HH:mm";
+        var checkUpdates = !dict.TryGetValue(KeyCheckUpdatesOnStartup, out var cu) || !bool.TryParse(cu, out var cub) || cub;
 
         return new AppSettingsDto(
             theme,
@@ -72,7 +76,8 @@ public sealed class AppSettingsService
             recentLimit,
             trashRetention,
             dateFormat,
-            timeFormat);
+            timeFormat,
+            checkUpdates);
     }
 
     public async Task SaveSettingsAsync(AppSettingsDto settings, CancellationToken cancellationToken = default)
@@ -95,5 +100,6 @@ public sealed class AppSettingsService
         await _repository.SetValueAsync(KeyTrashRetention, settings.TrashRetentionDays.ToString(), cancellationToken);
         await _repository.SetValueAsync(KeyDefaultDateFormat, settings.DefaultDateFormat, cancellationToken);
         await _repository.SetValueAsync(KeyDefaultTimeFormat, settings.DefaultTimeFormat, cancellationToken);
+        await _repository.SetValueAsync(KeyCheckUpdatesOnStartup, settings.CheckUpdatesOnStartup.ToString(), cancellationToken);
     }
 }

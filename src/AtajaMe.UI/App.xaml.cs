@@ -12,11 +12,13 @@ using AtajaMe.Application.Services;
 using AtajaMe.Application.Settings;
 using AtajaMe.Application.Snippets;
 using AtajaMe.Application.Sync.Services;
+using AtajaMe.Application.Updates;
 using AtajaMe.Application.Variables;
 using AtajaMe.Infrastructure.Backup;
 using AtajaMe.Infrastructure.Persistence;
 using AtajaMe.Infrastructure.Repositories;
 using AtajaMe.Infrastructure.Sync;
+using AtajaMe.Infrastructure.Updates;
 using AtajaMe.UI.Services;
 using AtajaMe.UI.ViewModels;
 using AtajaMe.UI.Views;
@@ -61,6 +63,8 @@ public partial class App : System.Windows.Application
     private UpdateFolderUseCase _updateFolderUseCase = null!;
     private DeleteFolderUseCase _deleteFolderUseCase = null!;
     private ManageExcludedApplicationsUseCase _excludedAppsUseCase = null!;
+    private GitHubUpdateService _gitHubUpdateService = null!;
+    private CheckForUpdatesUseCase _checkForUpdatesUseCase = null!;
 
     private readonly VariableResolutionOptions _variableOptions = new();
     private VariableResolutionService _variableResolutionService = null!;
@@ -158,6 +162,8 @@ public partial class App : System.Windows.Application
         _deleteFolderUseCase = new DeleteFolderUseCase(_folderRepo);
 
         _excludedAppsUseCase = new ManageExcludedApplicationsUseCase(_excludedAppsRepo);
+        _gitHubUpdateService = new GitHubUpdateService();
+        _checkForUpdatesUseCase = new CheckForUpdatesUseCase(_gitHubUpdateService);
 
         // 4. Motor de Expansión y Variables
         _variableResolutionService = new VariableResolutionService(_variableOptions);
@@ -307,6 +313,12 @@ public partial class App : System.Windows.Application
             _mainWindow.Show();
         }
 
+        // Comprobación de actualizaciones en segundo plano sin bloquear el arranque (si está activado)
+        if (settings.CheckUpdatesOnStartup)
+        {
+            _ = CheckForUpdatesInBackgroundAsync();
+        }
+
         // Ciclo de vida persistente en segundo plano (RF-34, RF-35)
         ShutdownMode = ShutdownMode.OnExplicitShutdown;
     }
@@ -379,6 +391,8 @@ public partial class App : System.Windows.Application
             _backupService,
             _syncEngine,
             _excludedAppsUseCase,
+            _checkForUpdatesUseCase,
+            _gitHubUpdateService,
             _variableOptions);
 
         var dialog = new SettingsDialog(vm)
@@ -386,6 +400,34 @@ public partial class App : System.Windows.Application
             Owner = _mainWindow.IsVisible ? _mainWindow : null
         };
         dialog.ShowDialog();
+    }
+
+    private async Task CheckForUpdatesInBackgroundAsync()
+    {
+        try
+        {
+            // Pequeña espera tras el arranque para no competir por CPU o red
+            await Task.Delay(3000);
+
+            var currentVersion = System.Reflection.Assembly.GetExecutingAssembly().GetName().Version ?? new Version(1, 0, 0);
+            var update = await _checkForUpdatesUseCase.ExecuteAsync(currentVersion);
+
+            if (update != null && update.IsUpdateAvailable)
+            {
+                Dispatcher.Invoke(() =>
+                {
+                    var dialog = new UpdateAvailableDialog(update, _gitHubUpdateService)
+                    {
+                        Owner = _mainWindow.IsVisible ? _mainWindow : null
+                    };
+                    dialog.ShowDialog();
+                });
+            }
+        }
+        catch
+        {
+            // Falla de red silenciosa: jamás interrumpir al usuario durante el inicio
+        }
     }
 
     public void OpenConflictResolutionDialog(Window? owner = null)
