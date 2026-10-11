@@ -381,6 +381,19 @@ public sealed class KeyboardExpansionOrchestrator : IKeyboardExpansionOrchestrat
                 4, // wFlags = 4: no alterar dead keys
                 hkl);
 
+            if (res == 0)
+            {
+                // Fallback sin flag 4
+                res = _win32.ToUnicodeEx(
+                    (uint)keyEvent.VirtualKeyCode,
+                    (uint)keyEvent.ScanCode,
+                    keyboardState,
+                    sb,
+                    sb.Capacity,
+                    0,
+                    hkl);
+            }
+
             if (res == 1)
             {
                 return sb[0];

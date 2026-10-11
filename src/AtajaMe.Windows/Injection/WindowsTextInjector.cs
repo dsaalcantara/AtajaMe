@@ -58,7 +58,7 @@ public sealed class WindowsTextInjector : ITextInjector
             {
                 try
                 {
-                    await Task.Delay(30, cancellationToken);
+                    await Task.Delay(40, cancellationToken);
                 }
                 catch (OperationCanceledException)
                 {
@@ -133,21 +133,28 @@ public sealed class WindowsTextInjector : ITextInjector
             int inputSize = Marshal.SizeOf<INPUT>();
             var releaseInputs = new List<INPUT>();
 
+            // Comprobar si AltGr está presionado (VK_RMENU o combinación Ctrl+Alt).
+            // Si AltGr está activo físicamente, no enviamos KEYUPs de Ctrl/Alt para no corromper el driver de Windows.
+            bool isRMenu = (_win32.GetAsyncKeyState(Win32Constants.VK_RMENU) & 0x8000) != 0;
+            bool isCtrl = (_win32.GetAsyncKeyState(Win32Constants.VK_CONTROL) & 0x8000) != 0;
+            bool isMenu = (_win32.GetAsyncKeyState(Win32Constants.VK_MENU) & 0x8000) != 0;
+            bool isAltGr = isRMenu || (isCtrl && isMenu);
+
             if ((_win32.GetAsyncKeyState(Win32Constants.VK_SHIFT) & 0x8000) != 0)
             {
                 releaseInputs.Add(CreateKeyInput(Win32Constants.VK_SHIFT, 0, Win32Constants.KEYEVENTF_KEYUP));
             }
-            if ((_win32.GetAsyncKeyState(Win32Constants.VK_CONTROL) & 0x8000) != 0)
+
+            if (!isAltGr)
             {
-                releaseInputs.Add(CreateKeyInput(Win32Constants.VK_CONTROL, 0, Win32Constants.KEYEVENTF_KEYUP));
-            }
-            if ((_win32.GetAsyncKeyState(Win32Constants.VK_MENU) & 0x8000) != 0)
-            {
-                releaseInputs.Add(CreateKeyInput(Win32Constants.VK_MENU, 0, Win32Constants.KEYEVENTF_KEYUP));
-            }
-            if ((_win32.GetAsyncKeyState(Win32Constants.VK_RMENU) & 0x8000) != 0)
-            {
-                releaseInputs.Add(CreateKeyInput(Win32Constants.VK_RMENU, 0, Win32Constants.KEYEVENTF_KEYUP));
+                if (isCtrl)
+                {
+                    releaseInputs.Add(CreateKeyInput(Win32Constants.VK_CONTROL, 0, Win32Constants.KEYEVENTF_KEYUP));
+                }
+                if (isMenu)
+                {
+                    releaseInputs.Add(CreateKeyInput(Win32Constants.VK_MENU, 0, Win32Constants.KEYEVENTF_KEYUP));
+                }
             }
 
             if (releaseInputs.Count > 0)

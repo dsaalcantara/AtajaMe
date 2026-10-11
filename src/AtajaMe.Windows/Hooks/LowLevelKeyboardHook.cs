@@ -236,6 +236,12 @@ public sealed class LowLevelKeyboardHook : IKeyboardHook
             var hkl = _win32.GetKeyboardLayout(threadId);
 
             int res = _win32.ToUnicodeEx(vkCode, scanCode, keyboardState, sb, sb.Capacity, 4, hkl);
+            if (res == 0)
+            {
+                // Fallback sin flag 4 si la API nativa de Windows no traduce con flag 4
+                res = _win32.ToUnicodeEx(vkCode, scanCode, keyboardState, sb, sb.Capacity, 0, hkl);
+            }
+
             if (res == 1) return sb[0];
             if (res > 1 && sb.Length > 0) return sb[sb.Length - 1];
         }
