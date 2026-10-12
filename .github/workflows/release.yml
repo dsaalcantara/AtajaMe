@@ -39,9 +39,13 @@ jobs:
           if ($version -notmatch '^\d+\.\d+\.\d+$') { throw "Etiqueta no válida: ${{ github.ref_name }}" }
           "value=$version" >> $env:GITHUB_OUTPUT
 
-      - name: Pruebas, publicación e instalador
+      - name: Ejecutar pruebas unitarias
         shell: pwsh
-        run: ./installer/build.ps1 -Version ${{ steps.version.outputs.value }}
+        run: dotnet test tests/AtajaMe.Tests/AtajaMe.Tests.csproj -c Release --nologo --verbosity normal
+
+      - name: Publicar binarios y generar instalador
+        shell: pwsh
+        run: ./installer/build.ps1 -Version ${{ steps.version.outputs.value }} -SkipTests
 
       - name: Crear Release en GitHub
         uses: softprops/action-gh-release@v2
