@@ -47,5 +47,7 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           name: AtajaMe ${{ github.ref_name }}
-          files: installer/output/AtajaMe_Setup.exe
+          files: |
+            installer/output/AtajaMe_Setup.exe
+            installer/output/AtajaMe_Portable.zip
           generate_release_notes: true

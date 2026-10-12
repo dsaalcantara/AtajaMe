@@ -64,8 +64,25 @@ if ($LASTEXITCODE -ne 0) {
 }
 Write-Host "-> Binarios publicados en: $publishDir" -ForegroundColor Green
 
-# 3. Compilación del Instalador con Inno Setup
-Write-Host "`n[3/3] Compilando instalador nativo con Inno Setup..." -ForegroundColor Yellow
+# 3. Empaquetado Portable (.ZIP)
+Write-Host "`n[3/4] Generando archivo comprimido portable (.zip)..." -ForegroundColor Yellow
+$outputDir = Join-Path $PSScriptRoot "output"
+if (-not (Test-Path $outputDir)) {
+    New-Item -Path $outputDir -ItemType Directory -Force | Out-Null
+}
+$portableZip = Join-Path $outputDir "AtajaMe_Portable.zip"
+if (Test-Path $portableZip) {
+    Remove-Item $portableZip -Force
+}
+Compress-Archive -Path "$publishDir\*" -DestinationPath $portableZip -CompressionLevel Optimal
+$zipItem = Get-Item -LiteralPath $portableZip
+$zipSizeMB = [math]::Round($zipItem.Length / 1MB, 2)
+$zipHash = (Get-FileHash -LiteralPath $portableZip -Algorithm SHA256).Hash
+Write-Host "-> Portable ZIP generado en: $portableZip ($zipSizeMB MB)" -ForegroundColor Green
+Write-Host "   SHA-256: $zipHash" -ForegroundColor DarkCyan
+
+# 4. Compilación del Instalador con Inno Setup
+Write-Host "`n[4/4] Compilando instalador nativo con Inno Setup..." -ForegroundColor Yellow
 
 $isccCandidates = @(
     "$env:LOCALAPPDATA\Programs\Inno Setup 6\ISCC.exe",
@@ -106,11 +123,12 @@ if (Test-Path -LiteralPath $outputExe) {
     $sizeMB = [math]::Round($item.Length / 1MB, 2)
 
     Write-Host "`n===========================================================" -ForegroundColor Green
-    Write-Host "  ¡Instalador generado con éxito!" -ForegroundColor Green
+    Write-Host "  ¡Paquetes generados con éxito!" -ForegroundColor Green
     Write-Host "===========================================================" -ForegroundColor Green
-    Write-Host "  Archivo : $outputExe"
-    Write-Host "  Tamaño  : $sizeMB MB ($($item.Length) bytes)"
-    Write-Host "  SHA-256 : $hash"
+    Write-Host "  Instalador   : $outputExe ($sizeMB MB)"
+    Write-Host "  SHA-256      : $hash"
+    Write-Host "  Portable ZIP : $portableZip ($zipSizeMB MB)"
+    Write-Host "  SHA-256      : $zipHash"
     Write-Host "===========================================================`n" -ForegroundColor Green
 } else {
     Write-Error "El ejecutable del instalador no se encontró en: $outputExe"
