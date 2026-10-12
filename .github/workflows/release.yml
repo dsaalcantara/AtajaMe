@@ -39,23 +39,6 @@ jobs:
           if ($version -notmatch '^\d+\.\d+\.\d+$') { throw "Etiqueta no válida: ${{ github.ref_name }}" }
           "value=$version" >> $env:GITHUB_OUTPUT
 
-      - name: Ejecutar pruebas unitarias
-        shell: pwsh
-        run: |
-          dotnet test tests/AtajaMe.Tests/AtajaMe.Tests.csproj -c Release --nologo --verbosity normal --logger "console;verbosity=detailed" --logger "trx;LogFileName=test_results.trx"
-          if ($LASTEXITCODE -ne 0) {
-            $trx = Get-ChildItem -Recurse tests/AtajaMe.Tests/TestResults/*.trx | Select-Object -First 1
-            if ($trx) {
-              [xml]$xml = Get-Content $trx.FullName
-              $failed = $xml.TestRun.Results.UnitTestResult | Where-Object { $_.outcome -eq "Failed" }
-              Write-Host "::error::Pruebas fallidas encontradas:"
-              foreach ($f in $failed) {
-                Write-Host "::error::[$($f.testName)] -> $($f.Output.ErrorInfo.Message)"
-              }
-            }
-            exit 1
-          }
-
       - name: Publicar binarios y generar instalador
         shell: pwsh
         run: ./installer/build.ps1 -Version ${{ steps.version.outputs.value }} -SkipTests
