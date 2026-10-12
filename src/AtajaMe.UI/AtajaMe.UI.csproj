@@ -17,7 +17,7 @@
     <AssemblyName>AtajaMe</AssemblyName>
     <ApplicationIcon>Assets\app.ico</ApplicationIcon>
     <!-- Fuente única de versión. GitHub Actions la sobrescribe con la etiqueta (vX.Y.Z). -->
-    <Version>1.1.0</Version>
+    <Version>1.2.0</Version>
   </PropertyGroup>
 
   <ItemGroup>
