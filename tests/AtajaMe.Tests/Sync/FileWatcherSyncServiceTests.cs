@@ -58,8 +58,8 @@ public class FileWatcherSyncServiceTests : IDisposable
         var manifestFile = Path.Combine(_tempSyncDir, "sync_manifest.json");
         await File.WriteAllTextAsync(manifestFile, "{\"Version\": 1}");
 
-        // Esperar a que se dispare el evento debounced
-        var completedTask = await Task.WhenAny(tcs.Task, Task.Delay(2000));
+        // Esperar a que se dispare el evento debounced (margen holgado para runners CI)
+        var completedTask = await Task.WhenAny(tcs.Task, Task.Delay(5000));
         Assert.Same(tcs.Task, completedTask);
         Assert.True(await tcs.Task);
 

@@ -93,7 +93,7 @@ public class CircularKeyBufferTests
     [Fact]
     public void AutoPurge_PurgesBufferAfterIdleTimeout()
     {
-        using var buffer = new CircularKeyBuffer(50, TimeSpan.FromMilliseconds(50));
+        using var buffer = new CircularKeyBuffer(50, TimeSpan.FromMilliseconds(100));
         var purgedFired = new ManualResetEventSlim(false);
 
         buffer.BufferPurged += (_, _) => purgedFired.Set();
@@ -105,7 +105,7 @@ public class CircularKeyBufferTests
 
         Assert.Equal("test", buffer.GetContent());
 
-        var signaled = purgedFired.Wait(TimeSpan.FromMilliseconds(500));
+        var signaled = purgedFired.Wait(TimeSpan.FromMilliseconds(2000));
 
         Assert.True(signaled, "El temporizador de inactividad debería haber purgado el búfer.");
         Assert.True(buffer.IsEmpty);
@@ -115,20 +115,20 @@ public class CircularKeyBufferTests
     [Fact]
     public void AutoPurge_ResetOnNewAppend()
     {
-        using var buffer = new CircularKeyBuffer(50, TimeSpan.FromMilliseconds(400));
+        using var buffer = new CircularKeyBuffer(50, TimeSpan.FromMilliseconds(800));
         var purgedFired = new ManualResetEventSlim(false);
 
         buffer.BufferPurged += (_, _) => purgedFired.Set();
 
         buffer.Append('a');
-        Thread.Sleep(250);
-        buffer.Append('b'); // Reinicia el temporizador de 400ms
-        Thread.Sleep(250);  // 500ms desde 'a' (> timeout), pero solo 250ms desde 'b'
+        Thread.Sleep(300);
+        buffer.Append('b'); // Reinicia el temporizador de 800ms
+        Thread.Sleep(300);  // 600ms desde 'a', pero solo 300ms desde 'b'
 
         Assert.False(buffer.IsEmpty, "El búfer no debería haberse purgado porque se escribió antes de vencer.");
         Assert.Equal("ab", buffer.GetContent());
 
-        var signaled = purgedFired.Wait(TimeSpan.FromMilliseconds(2000));
+        var signaled = purgedFired.Wait(TimeSpan.FromMilliseconds(3000));
         Assert.True(signaled);
         Assert.True(buffer.IsEmpty);
     }

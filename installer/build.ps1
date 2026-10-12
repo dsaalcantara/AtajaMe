@@ -35,7 +35,7 @@ Write-Host "===========================================================" -Foregr
 # 1. Pruebas Unitarias
 if (-not $SkipTests) {
     Write-Host "`n[1/3] Ejecutando suite de pruebas unitarias..." -ForegroundColor Yellow
-    dotnet test "$rootDir\tests\AtajaMe.Tests\AtajaMe.Tests.csproj" -c Release --nologo
+    dotnet test "$rootDir\tests\AtajaMe.Tests\AtajaMe.Tests.csproj" -c Release --nologo --verbosity normal
     if ($LASTEXITCODE -ne 0) {
         Write-Error "Las pruebas unitarias fallaron. Abortando empaquetado."
     }
