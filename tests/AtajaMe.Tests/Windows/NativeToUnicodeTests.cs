@@ -117,16 +117,23 @@ public sealed class NativeToUnicodeTests
     [Fact]
     public void LowLevelKeyboardHook_ResolvesAltGrKeySequence_AsAtSign()
     {
-        var win32 = NativeWin32Api.Instance;
-        using var hook = new AtajaMe.Windows.Hooks.LowLevelKeyboardHook(win32);
+        var fakeWin32 = new FakeWin32Api();
+        fakeWin32.KeyToUnicodeMap[0x32] = '@';
+
+        using var hook = new AtajaMe.Windows.Hooks.LowLevelKeyboardHook(fakeWin32);
         hook.Start();
 
-        // 1. Emular el flujo que Windows envía al pulsar AltGr + 2
-        // El hook recibe VK_LCONTROL KeyDown, VK_RMENU KeyDown, y VK_2 KeyDown
-        var reader = hook.KeyEvents;
-
-        // Comprobamos la llamada interna de traducción directamente para asegurar fiabilidad
-        // (el hook físico se alimenta mediante el delegado)
         Assert.True(hook.IsRunning);
+
+        // Emular el flujo que Windows envía al pulsar AltGr + 2
+        fakeWin32.SimulateHookCallback(Win32Constants.VK_LCONTROL, 29, 0, UIntPtr.Zero, isKeyDown: true);
+        fakeWin32.SimulateHookCallback(Win32Constants.VK_RMENU, 56, 1, UIntPtr.Zero, isKeyDown: true);
+        fakeWin32.SimulateHookCallback(0x32, 3, 0x20, UIntPtr.Zero, isKeyDown: true);
+
+        var reader = hook.KeyEvents;
+        Assert.True(reader.TryRead(out _)); // Ctrl
+        Assert.True(reader.TryRead(out _)); // Menu
+        Assert.True(reader.TryRead(out var key2Event));
+        Assert.Equal('@', key2Event.Character);
     }
 }
