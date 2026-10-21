@@ -27,8 +27,9 @@
 
         <Grid Grid.Row="0" ClipToBounds="True">
             <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="220" MinWidth="180" MaxWidth="280" />
-                <ColumnDefinition Width="340" MinWidth="240" MaxWidth="460" />
+                <ColumnDefinition Width="240" MinWidth="180" MaxWidth="420" />
+                <ColumnDefinition Width="4" />
+                <ColumnDefinition Width="340" MinWidth="240" MaxWidth="500" />
                 <ColumnDefinition Width="4" />
                 <ColumnDefinition Width="*" MinWidth="300" />
             </Grid.ColumnDefinitions>
@@ -37,9 +38,7 @@
             <!-- PANEL LATERAL IZQUIERDO (NAVEGACIÓN Y CARPETAS) -->
             <!-- ============================================== -->
             <Border Grid.Column="0"
-                    Background="{DynamicResource BgSidebarBrush}"
-                    BorderBrush="{DynamicResource BorderBrush}"
-                    BorderThickness="0,0,1,0">
+                    Background="{DynamicResource BgSidebarBrush}">
                 <DockPanel Margin="12,16,12,12">
                     <!-- Logotipo y Estado Superior -->
                     <StackPanel DockPanel.Dock="Top" Margin="0,0,0,16">
@@ -125,156 +124,170 @@
                                 Padding="8,4" />
                     </StackPanel>
 
-                    <!-- Menú de Biblioteca -->
-                    <ScrollViewer VerticalScrollBarVisibility="Auto">
-                        <StackPanel>
-                            <TextBlock Text="BIBLIOTECA"
+                    <!-- Menú de Biblioteca Fijo arriba -->
+                    <StackPanel DockPanel.Dock="Top">
+                        <TextBlock Text="BIBLIOTECA"
+                                   FontSize="11"
+                                   FontWeight="Bold"
+                                   Foreground="{DynamicResource TextMutedBrush}"
+                                   Margin="4,0,0,6" />
+
+                        <!-- Todos -->
+                        <Button Style="{StaticResource SecondaryButtonStyle}"
+                                Command="{Binding SelectAllCommand}"
+                                HorizontalContentAlignment="Stretch"
+                                BorderThickness="0"
+                                Margin="0,1">
+                            <DockPanel LastChildFill="True">
+                                <TextBlock Text="{Binding AllCount, StringFormat='({0})'}"
+                                           DockPanel.Dock="Right"
+                                           Foreground="{DynamicResource TextMutedBrush}"
+                                           FontSize="11"
+                                           VerticalAlignment="Center"
+                                           Margin="8,0,0,0" />
+                                <TextBlock Text="📋 Todos los atajos" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
+                            </DockPanel>
+                        </Button>
+
+                        <!-- Favoritos -->
+                        <Button Style="{StaticResource SecondaryButtonStyle}"
+                                Command="{Binding SelectFavoritesCommand}"
+                                HorizontalContentAlignment="Stretch"
+                                BorderThickness="0"
+                                Margin="0,1">
+                            <DockPanel LastChildFill="True">
+                                <TextBlock Text="{Binding FavoritesCount, StringFormat='({0})'}"
+                                           DockPanel.Dock="Right"
+                                           Foreground="{DynamicResource TextMutedBrush}"
+                                           FontSize="11"
+                                           VerticalAlignment="Center"
+                                           Margin="8,0,0,0" />
+                                <TextBlock Text="⭐ Favoritos" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
+                            </DockPanel>
+                        </Button>
+
+                        <!-- Recientes -->
+                        <Button Style="{StaticResource SecondaryButtonStyle}"
+                                Command="{Binding SelectRecentCommand}"
+                                HorizontalContentAlignment="Stretch"
+                                BorderThickness="0"
+                                Margin="0,1">
+                            <DockPanel LastChildFill="True">
+                                <TextBlock Text="{Binding RecentCount, StringFormat='({0})'}"
+                                           DockPanel.Dock="Right"
+                                           Foreground="{DynamicResource TextMutedBrush}"
+                                           FontSize="11"
+                                           VerticalAlignment="Center"
+                                           Margin="8,0,0,0" />
+                                <TextBlock Text="🕒 Recientes" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
+                            </DockPanel>
+                        </Button>
+
+                        <!-- Papelera -->
+                        <Button Style="{StaticResource SecondaryButtonStyle}"
+                                Command="{Binding SelectTrashCommand}"
+                                HorizontalContentAlignment="Stretch"
+                                BorderThickness="0"
+                                Margin="0,1">
+                            <DockPanel LastChildFill="True">
+                                <TextBlock Text="{Binding TrashCount, StringFormat='({0})'}"
+                                           DockPanel.Dock="Right"
+                                           Foreground="{DynamicResource TextMutedBrush}"
+                                           FontSize="11"
+                                           VerticalAlignment="Center"
+                                           Margin="8,0,0,0" />
+                                <TextBlock Text="🗑 Papelera" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
+                            </DockPanel>
+                        </Button>
+
+                        <Separator Background="{DynamicResource BorderBrush}" Margin="0,12" />
+
+                        <!-- Sección Carpetas (Cabecera fija) -->
+                        <DockPanel Margin="4,0,0,6">
+                            <Button Content="+"
+                                    Command="{Binding NewFolderCommand}"
+                                    Style="{StaticResource SecondaryButtonStyle}"
+                                    DockPanel.Dock="Right"
+                                    Padding="6,1"
+                                    ToolTip="Nueva carpeta raíz" />
+                            <TextBlock Text="CARPETAS"
                                        FontSize="11"
                                        FontWeight="Bold"
                                        Foreground="{DynamicResource TextMutedBrush}"
-                                       Margin="4,0,0,6" />
+                                       VerticalAlignment="Center" />
+                        </DockPanel>
+                    </StackPanel>
 
-                            <!-- Todos -->
-                            <Button Style="{StaticResource SecondaryButtonStyle}"
-                                    Command="{Binding SelectAllCommand}"
-                                    HorizontalContentAlignment="Stretch"
-                                    BorderThickness="0"
-                                    Margin="0,1">
-                                <DockPanel LastChildFill="True">
-                                    <TextBlock Text="{Binding AllCount, StringFormat='({0})'}"
-                                               DockPanel.Dock="Right"
-                                               Foreground="{DynamicResource TextMutedBrush}"
-                                               FontSize="11"
+                    <!-- Árbol de Carpetas con su propio ScrollViewer independiente (Vertical y Horizontal) -->
+                    <TreeView ItemsSource="{Binding FolderTree}"
+                              Background="Transparent"
+                              BorderThickness="0"
+                              ScrollViewer.HorizontalScrollBarVisibility="Auto"
+                              ScrollViewer.VerticalScrollBarVisibility="Auto"
+                              SelectedItemChanged="OnFolderTreeSelectedItemChanged"
+                              KeyDown="OnFolderTreeKeyDown">
+                        <TreeView.ItemContainerStyle>
+                            <Style TargetType="{x:Type TreeViewItem}" BasedOn="{StaticResource {x:Type TreeViewItem}}">
+                                <Setter Property="IsExpanded" Value="{Binding IsExpanded, Mode=TwoWay}" />
+                                <Setter Property="IsSelected" Value="{Binding IsSelected, Mode=TwoWay}" />
+                                <Setter Property="Tag" Value="{Binding DataContext, RelativeSource={RelativeSource AncestorType=TreeView}}" />
+                                <EventSetter Event="PreviewMouseRightButtonDown" Handler="OnTreeViewItemPreviewMouseRightButtonDown" />
+                                <EventSetter Event="RequestBringIntoView" Handler="OnTreeViewItemRequestBringIntoView" />
+                                <Setter Property="ContextMenu">
+                                    <Setter.Value>
+                                        <ContextMenu>
+                                            <MenuItem Header="➕ Nueva subcarpeta..."
+                                                      Command="{Binding PlacementTarget.Tag.NewSubFolderCommand, RelativeSource={RelativeSource AncestorType=ContextMenu}}"
+                                                      CommandParameter="{Binding PlacementTarget.DataContext, RelativeSource={RelativeSource AncestorType=ContextMenu}}" />
+                                            <MenuItem Header="✏️ Renombrar carpeta..."
+                                                      Command="{Binding PlacementTarget.Tag.RenameFolderCommand, RelativeSource={RelativeSource AncestorType=ContextMenu}}"
+                                                      CommandParameter="{Binding PlacementTarget.DataContext, RelativeSource={RelativeSource AncestorType=ContextMenu}}" />
+                                            <Separator />
+                                            <MenuItem Header="🗑️ Eliminar carpeta"
+                                                      Command="{Binding PlacementTarget.Tag.DeleteFolderCommand, RelativeSource={RelativeSource AncestorType=ContextMenu}}"
+                                                      CommandParameter="{Binding PlacementTarget.DataContext, RelativeSource={RelativeSource AncestorType=ContextMenu}}" />
+                                        </ContextMenu>
+                                    </Setter.Value>
+                                </Setter>
+                            </Style>
+                        </TreeView.ItemContainerStyle>
+                        <TreeView.ItemTemplate>
+                            <HierarchicalDataTemplate DataType="{x:Type vm:FolderTreeItemViewModel}"
+                                                      ItemsSource="{Binding Children}">
+                                <StackPanel Orientation="Horizontal" Margin="2,3" ToolTip="{Binding Name}">
+                                    <TextBlock Text="📁 "
+                                               FontSize="12"
+                                               VerticalAlignment="Center" />
+                                    <TextBlock Text="{Binding Name}"
+                                               Foreground="{DynamicResource TextPrimaryBrush}"
                                                VerticalAlignment="Center"
-                                               Margin="8,0,0,0" />
-                                    <TextBlock Text="📋 Todos los atajos" VerticalAlignment="Center" />
-                                </DockPanel>
-                            </Button>
-
-                            <!-- Favoritos -->
-                            <Button Style="{StaticResource SecondaryButtonStyle}"
-                                    Command="{Binding SelectFavoritesCommand}"
-                                    HorizontalContentAlignment="Stretch"
-                                    BorderThickness="0"
-                                    Margin="0,1">
-                                <DockPanel LastChildFill="True">
-                                    <TextBlock Text="{Binding FavoritesCount, StringFormat='({0})'}"
-                                               DockPanel.Dock="Right"
-                                               Foreground="{DynamicResource TextMutedBrush}"
+                                               Margin="2,0,6,0" />
+                                    <TextBlock Text="{Binding SnippetCount, StringFormat='({0})'}"
                                                FontSize="11"
-                                               VerticalAlignment="Center"
-                                               Margin="8,0,0,0" />
-                                    <TextBlock Text="⭐ Favoritos" VerticalAlignment="Center" />
-                                </DockPanel>
-                            </Button>
-
-                            <!-- Recientes -->
-                            <Button Style="{StaticResource SecondaryButtonStyle}"
-                                    Command="{Binding SelectRecentCommand}"
-                                    HorizontalContentAlignment="Stretch"
-                                    BorderThickness="0"
-                                    Margin="0,1">
-                                <DockPanel LastChildFill="True">
-                                    <TextBlock Text="{Binding RecentCount, StringFormat='({0})'}"
-                                               DockPanel.Dock="Right"
                                                Foreground="{DynamicResource TextMutedBrush}"
-                                               FontSize="11"
                                                VerticalAlignment="Center"
-                                               Margin="8,0,0,0" />
-                                    <TextBlock Text="🕒 Recientes" VerticalAlignment="Center" />
-                                </DockPanel>
-                            </Button>
-
-                            <!-- Papelera -->
-                            <Button Style="{StaticResource SecondaryButtonStyle}"
-                                    Command="{Binding SelectTrashCommand}"
-                                    HorizontalContentAlignment="Stretch"
-                                    BorderThickness="0"
-                                    Margin="0,1">
-                                <DockPanel LastChildFill="True">
-                                    <TextBlock Text="{Binding TrashCount, StringFormat='({0})'}"
-                                               DockPanel.Dock="Right"
-                                               Foreground="{DynamicResource TextMutedBrush}"
-                                               FontSize="11"
-                                               VerticalAlignment="Center"
-                                               Margin="8,0,0,0" />
-                                    <TextBlock Text="🗑 Papelera" VerticalAlignment="Center" />
-                                </DockPanel>
-                            </Button>
-
-                            <Separator Background="{DynamicResource BorderBrush}" Margin="0,12" />
-
-                            <!-- Sección Carpetas -->
-                            <DockPanel Margin="4,0,0,6">
-                                <Button Content="+"
-                                        Command="{Binding NewFolderCommand}"
-                                        Style="{StaticResource SecondaryButtonStyle}"
-                                        DockPanel.Dock="Right"
-                                        Padding="6,1"
-                                        ToolTip="Nueva carpeta raíz" />
-                                <TextBlock Text="CARPETAS"
-                                           FontSize="11"
-                                           FontWeight="Bold"
-                                           Foreground="{DynamicResource TextMutedBrush}"
-                                           VerticalAlignment="Center" />
-                            </DockPanel>
-
-                            <!-- Árbol de Carpetas -->
-                            <TreeView ItemsSource="{Binding FolderTree}"
-                                      Background="Transparent"
-                                      BorderThickness="0"
-                                      SelectedItemChanged="OnFolderTreeSelectedItemChanged"
-                                      KeyDown="OnFolderTreeKeyDown">
-                                <TreeView.ItemContainerStyle>
-                                    <Style TargetType="{x:Type TreeViewItem}" BasedOn="{StaticResource {x:Type TreeViewItem}}">
-                                        <Setter Property="IsExpanded" Value="{Binding IsExpanded, Mode=TwoWay}" />
-                                        <Setter Property="IsSelected" Value="{Binding IsSelected, Mode=TwoWay}" />
-                                        <Setter Property="Tag" Value="{Binding DataContext, RelativeSource={RelativeSource AncestorType=TreeView}}" />
-                                        <EventSetter Event="PreviewMouseRightButtonDown" Handler="OnTreeViewItemPreviewMouseRightButtonDown" />
-                                        <Setter Property="ContextMenu">
-                                            <Setter.Value>
-                                                <ContextMenu>
-                                                    <MenuItem Header="➕ Nueva subcarpeta..."
-                                                              Command="{Binding PlacementTarget.Tag.NewSubFolderCommand, RelativeSource={RelativeSource AncestorType=ContextMenu}}"
-                                                              CommandParameter="{Binding PlacementTarget.DataContext, RelativeSource={RelativeSource AncestorType=ContextMenu}}" />
-                                                    <MenuItem Header="✏️ Renombrar carpeta..."
-                                                              Command="{Binding PlacementTarget.Tag.RenameFolderCommand, RelativeSource={RelativeSource AncestorType=ContextMenu}}"
-                                                              CommandParameter="{Binding PlacementTarget.DataContext, RelativeSource={RelativeSource AncestorType=ContextMenu}}" />
-                                                    <Separator />
-                                                    <MenuItem Header="🗑️ Eliminar carpeta"
-                                                              Command="{Binding PlacementTarget.Tag.DeleteFolderCommand, RelativeSource={RelativeSource AncestorType=ContextMenu}}"
-                                                              CommandParameter="{Binding PlacementTarget.DataContext, RelativeSource={RelativeSource AncestorType=ContextMenu}}" />
-                                                </ContextMenu>
-                                            </Setter.Value>
-                                        </Setter>
-                                    </Style>
-                                </TreeView.ItemContainerStyle>
-                                <TreeView.ItemTemplate>
-                                    <HierarchicalDataTemplate DataType="{x:Type vm:FolderTreeItemViewModel}"
-                                                              ItemsSource="{Binding Children}">
-                                        <DockPanel Margin="2,3">
-                                            <TextBlock Text="📁 " FontSize="12" VerticalAlignment="Center" />
-                                            <TextBlock Text="{Binding Name}"
-                                                       Foreground="{DynamicResource TextPrimaryBrush}"
-                                                       VerticalAlignment="Center"
-                                                       Margin="4,0,8,0" />
-                                            <TextBlock Text="{Binding SnippetCount, StringFormat='({0})'}"
-                                                       FontSize="11"
-                                                       Foreground="{DynamicResource TextMutedBrush}"
-                                                       VerticalAlignment="Center" />
-                                        </DockPanel>
-                                    </HierarchicalDataTemplate>
-                                </TreeView.ItemTemplate>
-                            </TreeView>
-                        </StackPanel>
-                    </ScrollViewer>
+                                               Margin="0,0,8,0" />
+                                </StackPanel>
+                            </HierarchicalDataTemplate>
+                        </TreeView.ItemTemplate>
+                    </TreeView>
                 </DockPanel>
             </Border>
+
+            <!-- Separador Vertical Redimensionable entre Sidebar y Lista -->
+            <GridSplitter Grid.Column="1"
+                          Width="4"
+                          HorizontalAlignment="Center"
+                          VerticalAlignment="Stretch"
+                          ResizeBehavior="PreviousAndNext"
+                          ResizeDirection="Columns"
+                          Background="{DynamicResource BorderBrush}"
+                          Cursor="SizeWE" />
 
             <!-- ============================================== -->
             <!-- PANEL CENTRAL (LISTA DE ATAJOS Y BÚSQUEDA)      -->
             <!-- ============================================== -->
-            <Grid Grid.Column="1" Background="{DynamicResource BgSecondaryBrush}">
+            <Grid Grid.Column="2" Background="{DynamicResource BgSecondaryBrush}">
                 <DockPanel Margin="12,16,12,12">
                     <!-- Cabecera Superior: Título a la izquierda, Nuevo Atajo a la derecha -->
                     <DockPanel DockPanel.Dock="Top" Margin="0,0,0,8">
@@ -531,7 +544,7 @@
             </Grid>
 
             <!-- Separador Vertical Redimensionable -->
-            <GridSplitter Grid.Column="2"
+            <GridSplitter Grid.Column="3"
                           Width="4"
                           HorizontalAlignment="Center"
                           VerticalAlignment="Stretch"
@@ -543,7 +556,7 @@
             <!-- ============================================== -->
             <!-- PANEL DERECHO (INSPECTOR Y EDITOR DE ATAJO)     -->
             <!-- ============================================== -->
-            <Grid Grid.Column="3" Background="{DynamicResource BgPrimaryBrush}">
+            <Grid Grid.Column="4" Background="{DynamicResource BgPrimaryBrush}">
                 <!-- Estado Vacío (si no hay atajo en edición) -->
                 <ScrollViewer HorizontalScrollBarVisibility="Disabled"
                               VerticalScrollBarVisibility="Auto">
