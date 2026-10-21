@@ -8,6 +8,8 @@ namespace AtajaMe.Infrastructure.Persistence;
 public sealed class SqliteConnectionFactory : ISqliteConnectionFactory
 {
     private readonly string _connectionString;
+    private readonly bool _isMemoryDb;
+    private int _walInitialized;
 
     public SqliteConnectionFactory(string? connectionString = null)
     {
@@ -30,6 +32,8 @@ public sealed class SqliteConnectionFactory : ISqliteConnectionFactory
         {
             _connectionString = connectionString;
         }
+
+        _isMemoryDb = _connectionString.Contains(":memory:", StringComparison.OrdinalIgnoreCase);
     }
 
     public static SqliteConnectionFactory CreateInMemory()
@@ -47,23 +51,28 @@ public sealed class SqliteConnectionFactory : ISqliteConnectionFactory
         var connection = CreateConnection();
         await connection.OpenAsync(cancellationToken);
 
-        using (var cmd = connection.CreateCommand())
+        await using var cmd = connection.CreateCommand();
+        if (!_isMemoryDb && Interlocked.Exchange(ref _walInitialized, 1) == 0)
+        {
+            cmd.CommandText = @"
+                PRAGMA journal_mode = WAL;
+                PRAGMA foreign_keys = ON;
+                PRAGMA busy_timeout = 5000;
+                PRAGMA synchronous = NORMAL;
+                PRAGMA cache_size = -512;
+            ";
+        }
+        else
         {
             cmd.CommandText = @"
                 PRAGMA foreign_keys = ON;
                 PRAGMA busy_timeout = 5000;
                 PRAGMA synchronous = NORMAL;
+                PRAGMA cache_size = -512;
             ";
-            await cmd.ExecuteNonQueryAsync(cancellationToken);
-
-            // WAL solo aplica a bases de datos basadas en archivos
-            if (!_connectionString.Contains(":memory:", StringComparison.OrdinalIgnoreCase))
-            {
-                cmd.CommandText = "PRAGMA journal_mode = WAL;";
-                await cmd.ExecuteNonQueryAsync(cancellationToken);
-            }
         }
 
+        await cmd.ExecuteNonQueryAsync(cancellationToken);
         return connection;
     }
 }

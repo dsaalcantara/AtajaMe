@@ -54,7 +54,9 @@ public sealed class ExpansionResult
         PendingInputs = pendingInputs ?? Array.Empty<DynamicVariable>();
     }
 
-    public static ExpansionResult NoMatch() => new(ExpansionStatus.NoMatch);
+    private static readonly ExpansionResult NoMatchInstance = new(ExpansionStatus.NoMatch);
+
+    public static ExpansionResult NoMatch() => NoMatchInstance;
 
     public static ExpansionResult CreateSuccess(
         Snippet snippet,

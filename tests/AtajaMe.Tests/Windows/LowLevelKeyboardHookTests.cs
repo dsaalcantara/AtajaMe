@@ -46,7 +46,6 @@ public sealed class LowLevelKeyboardHookTests
 
         var reader = hook.KeyEvents;
         Assert.True(reader.TryRead(out var keyEvent));
-        Assert.NotNull(keyEvent);
         Assert.Equal(0x41, keyEvent.VirtualKeyCode);
         Assert.Equal(30, keyEvent.ScanCode);
         Assert.True(keyEvent.IsKeyDown);

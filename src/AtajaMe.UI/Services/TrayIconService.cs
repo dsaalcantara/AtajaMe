@@ -183,9 +183,16 @@ public sealed class TrayIconService : ITrayIconService
         }
 
         IntPtr hIcon = bitmap.GetHicon();
-        var icon = Icon.FromHandle(hIcon);
-        // Creamos una copia desacoplada del handle
-        return (Icon)icon.Clone();
+        try
+        {
+            using var icon = Icon.FromHandle(hIcon);
+            // Creamos una copia desacoplada del handle y liberamos el HICON temporal
+            return (Icon)icon.Clone();
+        }
+        finally
+        {
+            DestroyIcon(hIcon);
+        }
     }
 
     private static Icon CreatePausedIcon(Icon baseIcon)
@@ -210,9 +217,20 @@ public sealed class TrayIconService : ITrayIconService
         }
 
         IntPtr hIcon = bmp.GetHicon();
-        var icon = Icon.FromHandle(hIcon);
-        return (Icon)icon.Clone();
+        try
+        {
+            using var icon = Icon.FromHandle(hIcon);
+            return (Icon)icon.Clone();
+        }
+        finally
+        {
+            DestroyIcon(hIcon);
+        }
     }
+
+    [System.Runtime.InteropServices.DllImport("user32.dll", SetLastError = true)]
+    [return: System.Runtime.InteropServices.MarshalAs(System.Runtime.InteropServices.UnmanagedType.Bool)]
+    private static extern bool DestroyIcon(IntPtr hIcon);
 
     public void Dispose()
     {

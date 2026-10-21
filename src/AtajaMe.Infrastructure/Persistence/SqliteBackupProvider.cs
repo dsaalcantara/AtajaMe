@@ -12,10 +12,12 @@ namespace AtajaMe.Infrastructure.Persistence;
 public sealed class SqliteBackupProvider : ISqliteBackupProvider
 {
     private readonly ISqliteConnectionFactory _connectionFactory;
+    private readonly Action? _onDatabaseRestored;
 
-    public SqliteBackupProvider(ISqliteConnectionFactory connectionFactory)
+    public SqliteBackupProvider(ISqliteConnectionFactory connectionFactory, Action? onDatabaseRestored = null)
     {
         _connectionFactory = connectionFactory ?? throw new ArgumentNullException(nameof(connectionFactory));
+        _onDatabaseRestored = onDatabaseRestored;
     }
 
     public async Task BackupToAsync(string destinationFilePath, CancellationToken cancellationToken = default)
@@ -51,6 +53,7 @@ public sealed class SqliteBackupProvider : ISqliteBackupProvider
         await using var liveConnection = await _connectionFactory.CreateOpenConnectionAsync(cancellationToken);
 
         sourceBackupConnection.BackupDatabase(liveConnection);
+        _onDatabaseRestored?.Invoke();
     }
 
     public async Task<BackupPreviewDto> InspectBackupAsync(string backupFilePath, CancellationToken cancellationToken = default)

@@ -45,8 +45,32 @@ public sealed class SettingsViewModel : ViewModelBase
     private string _statusMessage = string.Empty;
     private bool _hasPendingConflicts;
     private bool _isCheckingUpdates;
+    private string? _latestGitHubVersionText;
 
     public string CurrentVersionText { get; }
+
+    public string? LatestGitHubVersionText
+    {
+        get => _latestGitHubVersionText;
+        private set
+        {
+            if (SetProperty(ref _latestGitHubVersionText, value))
+            {
+                OnPropertyChanged(nameof(AboutHeaderVersionText));
+                OnPropertyChanged(nameof(VersionComparisonStatusText));
+            }
+        }
+    }
+
+    public string AboutHeaderVersionText =>
+        string.IsNullOrWhiteSpace(LatestGitHubVersionText) || string.Equals(LatestGitHubVersionText, CurrentVersionText, StringComparison.OrdinalIgnoreCase)
+            ? $"AtajaMe · Versión {CurrentVersionText}"
+            : $"AtajaMe · Versión {CurrentVersionText} (Última en GitHub: {LatestGitHubVersionText})";
+
+    public string VersionComparisonStatusText =>
+        string.IsNullOrWhiteSpace(LatestGitHubVersionText)
+            ? $"Instalada: {CurrentVersionText}"
+            : $"Instalada: {CurrentVersionText}  |  GitHub: {LatestGitHubVersionText}";
 
     public string DefaultDateFormat
     {
@@ -228,6 +252,24 @@ public sealed class SettingsViewModel : ViewModelBase
         await LoadExcludedAppsAsync();
         await LoadBackupsAsync();
         await CheckConflictsAsync();
+        _ = RefreshLatestGitHubVersionSilentAsync();
+    }
+
+    private async Task RefreshLatestGitHubVersionSilentAsync()
+    {
+        try
+        {
+            var currentVersion = Assembly.GetExecutingAssembly().GetName().Version ?? new Version(1, 0, 0);
+            var update = await _checkForUpdatesUseCase.ExecuteAsync(currentVersion);
+            if (update != null && !string.IsNullOrWhiteSpace(update.TagName))
+            {
+                LatestGitHubVersionText = update.TagName.StartsWith('v') ? update.TagName : $"v{update.TagName}";
+            }
+        }
+        catch
+        {
+            // Silencioso si no hay red al abrir Configuración
+        }
     }
 
     public async Task CheckUpdatesNowAsync()
@@ -243,6 +285,11 @@ public sealed class SettingsViewModel : ViewModelBase
             {
                 StatusMessage = "No se pudo conectar con GitHub o no hay releases disponibles.";
                 return;
+            }
+
+            if (!string.IsNullOrWhiteSpace(update.TagName))
+            {
+                LatestGitHubVersionText = update.TagName.StartsWith('v') ? update.TagName : $"v{update.TagName}";
             }
 
             if (update.IsUpdateAvailable)

@@ -4,7 +4,7 @@ namespace AtajaMe.Application.Services;
 /// Representa un evento de teclado de bajo nivel capturado por el hook del sistema operativo.
 /// Es inmutable y no almacena información privada en almacenamiento persistente.
 /// </summary>
-public sealed class RawKeyEvent
+public readonly struct RawKeyEvent
 {
     /// <summary>
     /// Código de tecla virtual de Windows (ej. VK_A, VK_SPACE, VK_RETURN, etc.).

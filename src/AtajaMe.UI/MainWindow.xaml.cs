@@ -11,8 +11,6 @@ namespace AtajaMe.UI;
 /// </summary>
 public partial class MainWindow : Window
 {
-    private bool _allowRealClose;
-
     public MainViewModel ViewModel => (MainViewModel)DataContext;
 
     public MainWindow(MainViewModel viewModel)
@@ -24,23 +22,15 @@ public partial class MainWindow : Window
     }
 
     /// <summary>
-    /// Permite el cierre definitivo de la ventana cuando la aplicación finaliza explícitamente desde la bandeja.
+    /// Cierra la ventana principal liberando sus recursos visuales.
     /// </summary>
     public void ForceClose()
     {
-        _allowRealClose = true;
         Close();
     }
 
     protected override void OnClosing(CancelEventArgs e)
     {
-        if (!_allowRealClose)
-        {
-            e.Cancel = true;
-            Hide();
-            return;
-        }
-
         base.OnClosing(e);
     }
 

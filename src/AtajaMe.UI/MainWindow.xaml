@@ -45,11 +45,14 @@
                     <StackPanel DockPanel.Dock="Top" Margin="0,0,0,16">
                         <DockPanel>
                             <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                                <Image Source="pack://application:,,,/Assets/app.png"
-                                       Width="22" Height="22"
+                                <Image Width="22" Height="22"
                                        Margin="0,0,8,0"
                                        VerticalAlignment="Center"
-                                       RenderOptions.BitmapScalingMode="HighQuality" />
+                                       RenderOptions.BitmapScalingMode="HighQuality">
+                                    <Image.Source>
+                                        <BitmapImage UriSource="pack://application:,,,/Assets/app.png" DecodePixelWidth="44" />
+                                    </Image.Source>
+                                </Image>
                                 <TextBlock Text="AtajaMe"
                                            FontWeight="Bold"
                                            FontSize="17"

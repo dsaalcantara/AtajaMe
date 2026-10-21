@@ -12,10 +12,17 @@ namespace AtajaMe.Infrastructure.Repositories;
 public sealed class SnippetRepository : ISnippetRepository
 {
     private readonly ISqliteConnectionFactory _connectionFactory;
+    private readonly SemaphoreSlim _cacheLock = new(1, 1);
+    private volatile Dictionary<string, Snippet>? _activeCodeCache;
 
     public SnippetRepository(ISqliteConnectionFactory connectionFactory)
     {
         _connectionFactory = connectionFactory;
+    }
+
+    public void InvalidateCache()
+    {
+        _activeCodeCache = null;
     }
 
     public async Task<IReadOnlyList<Snippet>> GetAllAsync(CancellationToken cancellationToken = default)
@@ -111,11 +118,51 @@ public sealed class SnippetRepository : ISnippetRepository
 
     public async Task<Snippet?> GetByCodeAsync(string code, CancellationToken cancellationToken = default)
     {
-        await using var connection = await _connectionFactory.CreateOpenConnectionAsync(cancellationToken);
-        const string sql = "SELECT * FROM Snippets WHERE Code = @Code COLLATE NOCASE AND IsInTrash = 0 LIMIT 1";
+        if (string.IsNullOrWhiteSpace(code))
+        {
+            return null;
+        }
 
-        var record = await connection.QuerySingleOrDefaultAsync<SnippetRecord>(sql, new { Code = code.Trim() });
-        return record?.ToDomain();
+        var trimmed = code.Trim();
+        var cache = await GetOrLoadCodeCacheAsync(cancellationToken);
+        return cache.TryGetValue(trimmed, out var snippet) ? snippet : null;
+    }
+
+    private async Task<Dictionary<string, Snippet>> GetOrLoadCodeCacheAsync(CancellationToken cancellationToken)
+    {
+        var current = _activeCodeCache;
+        if (current != null)
+        {
+            return current;
+        }
+
+        await _cacheLock.WaitAsync(cancellationToken);
+        try
+        {
+            current = _activeCodeCache;
+            if (current != null)
+            {
+                return current;
+            }
+
+            await using var connection = await _connectionFactory.CreateOpenConnectionAsync(cancellationToken);
+            const string sql = "SELECT * FROM Snippets WHERE IsInTrash = 0;";
+            var records = await connection.QueryAsync<SnippetRecord>(sql);
+
+            var dict = new Dictionary<string, Snippet>(StringComparer.OrdinalIgnoreCase);
+            foreach (var r in records)
+            {
+                var domain = r.ToDomain();
+                dict[domain.Code] = domain;
+            }
+
+            _activeCodeCache = dict;
+            return dict;
+        }
+        finally
+        {
+            _cacheLock.Release();
+        }
     }
 
     public async Task<Snippet?> GetAnyByCodeAsync(string code, CancellationToken cancellationToken = default)
@@ -176,6 +223,7 @@ public sealed class SnippetRepository : ISnippetRepository
 
         var record = SnippetRecord.FromDomain(snippet);
         await connection.ExecuteAsync(sql, record);
+        InvalidateCache();
     }
 
     public async Task UpdateAsync(Snippet snippet, CancellationToken cancellationToken = default)
@@ -200,6 +248,7 @@ public sealed class SnippetRepository : ISnippetRepository
 
         var record = SnippetRecord.FromDomain(snippet);
         await connection.ExecuteAsync(sql, record);
+        InvalidateCache();
     }
 
     public async Task DeletePermanentAsync(Guid id, CancellationToken cancellationToken = default)
@@ -207,6 +256,7 @@ public sealed class SnippetRepository : ISnippetRepository
         await using var connection = await _connectionFactory.CreateOpenConnectionAsync(cancellationToken);
         const string sql = "DELETE FROM Snippets WHERE Id = @Id;";
         await connection.ExecuteAsync(sql, new { Id = id.ToString() });
+        InvalidateCache();
     }
 
     public async Task PurgeTrashOlderThanAsync(DateTime cutoffDate, CancellationToken cancellationToken = default)
@@ -215,6 +265,7 @@ public sealed class SnippetRepository : ISnippetRepository
         const string sql = "DELETE FROM Snippets WHERE IsInTrash = 1 AND DeletedAt <= @CutoffDate;";
         var cutoffIso = cutoffDate.ToString("o", CultureInfo.InvariantCulture);
         await connection.ExecuteAsync(sql, new { CutoffDate = cutoffIso });
+        InvalidateCache();
     }
 
     public async Task<bool> ExistsCodeAsync(string code, Guid? excludeSnippetId = null, CancellationToken cancellationToken = default)

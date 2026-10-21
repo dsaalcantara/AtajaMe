@@ -113,6 +113,34 @@ public sealed class SettingsViewModelTests
         Assert.Equal("mstsc", vm.ExcludedApps[0].ProcessName);
     }
 
+    [Fact]
+    public async Task CheckUpdatesNowAsync_UpdatesLatestGitHubVersionTextAndHeader()
+    {
+        _fakeChecker.UpdateToReturn = new UpdateInfo(
+            CurrentVersion: new Version(1, 0, 0),
+            LatestVersion: new Version(1, 2, 2),
+            TagName: "v1.2.2",
+            ReleaseNotes: "Notas",
+            DownloadUrl: "https://example.com/setup.exe",
+            ReleasePageUrl: "https://example.com/releases",
+            IsUpdateAvailable: true);
+
+        var vm = new SettingsViewModel(
+            _settingsService,
+            _startupService,
+            _themeService,
+            _backupService,
+            _syncEngine,
+            _excludedUseCase,
+            _checkForUpdatesUseCase,
+            _fakeDownloader);
+
+        await vm.CheckUpdatesNowAsync();
+
+        Assert.Equal("v1.2.2", vm.LatestGitHubVersionText);
+        Assert.Contains("v1.2.2", vm.VersionComparisonStatusText);
+    }
+
     #region Fakes
 
     private sealed class FakeAppSettingsRepo : IAppSettingsRepository

@@ -220,12 +220,15 @@
                 <ScrollViewer VerticalScrollBarVisibility="Auto" Margin="12">
                     <StackPanel>
                         <StackPanel Orientation="Horizontal" Margin="0,0,0,8" VerticalAlignment="Center">
-                            <Image Source="pack://application:,,,/Assets/app.png"
-                                   Width="22" Height="22"
+                            <Image Width="22" Height="22"
                                    Margin="0,0,8,0"
                                    VerticalAlignment="Center"
-                                   RenderOptions.BitmapScalingMode="HighQuality" />
-                            <TextBlock Text="{Binding CurrentVersionText, StringFormat='AtajaMe · Versión {0}'}" FontWeight="Bold" FontSize="15" VerticalAlignment="Center" />
+                                   RenderOptions.BitmapScalingMode="HighQuality">
+                                <Image.Source>
+                                    <BitmapImage UriSource="pack://application:,,,/Assets/app.png" DecodePixelWidth="44" />
+                                </Image.Source>
+                            </Image>
+                            <TextBlock Text="{Binding AboutHeaderVersionText}" FontWeight="Bold" FontSize="15" VerticalAlignment="Center" />
                         </StackPanel>
                         <TextBlock Text="Gestor de atajos y expansión de texto instantáneo para Windows."
                                    FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,0,0,16" />
@@ -254,7 +257,7 @@
                                     Style="{StaticResource SecondaryButtonStyle}"
                                     Padding="12,6"
                                     Margin="0,0,12,0" />
-                            <TextBlock Text="{Binding CurrentVersionText, StringFormat='Instalada: {0}'}"
+                            <TextBlock Text="{Binding VersionComparisonStatusText}"
                                        VerticalAlignment="Center"
                                        FontSize="12"
                                        Foreground="{DynamicResource TextSecondaryBrush}" />

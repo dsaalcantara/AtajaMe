@@ -92,13 +92,17 @@ public partial class App : System.Windows.Application
     private ThemeService _themeService = null!;
     private TrayIconService _trayIconService = null!;
 
-    private MainViewModel _mainViewModel = null!;
-    private MainWindow _mainWindow = null!;
+    private MainViewModel? _mainViewModel;
+    private MainWindow? _mainWindow;
+    private System.Windows.Media.ImageSource? _cachedAppIcon;
 
     private bool _isExiting;
 
     protected override async void OnStartup(StartupEventArgs e)
     {
+        // Evitar la carga de ~170 MB de compiladores de shaders de GPU (DirectX) innecesarios para una interfaz 2D de texto
+        System.Windows.Media.RenderOptions.ProcessRenderMode = System.Windows.Interop.RenderMode.SoftwareOnly;
+
         // Ciclo de vida persistente en segundo plano (RF-34, RF-35)
         ShutdownMode = ShutdownMode.OnExplicitShutdown;
         base.OnStartup(e);
@@ -138,212 +142,203 @@ public partial class App : System.Windows.Application
             _dbInitializer = new SqliteDatabaseInitializer(_connectionFactory);
             await _dbInitializer.InitializeAsync();
 
-        // 2. Repositorios
-        _snippetRepo = new SnippetRepository(_connectionFactory);
-        _folderRepo = new FolderRepository(_connectionFactory);
-        _excludedAppsRepo = new ExcludedApplicationRepository(_connectionFactory);
-        _syncMetadataRepo = new SyncMetadataRepository(_connectionFactory);
-        _appSettingsRepo = new AppSettingsRepository(_connectionFactory);
-        _appSettingsService = new AppSettingsService(_appSettingsRepo);
+            // 2. Repositorios
+            _snippetRepo = new SnippetRepository(_connectionFactory);
+            _folderRepo = new FolderRepository(_connectionFactory);
+            _excludedAppsRepo = new ExcludedApplicationRepository(_connectionFactory);
+            _syncMetadataRepo = new SyncMetadataRepository(_connectionFactory);
+            _appSettingsRepo = new AppSettingsRepository(_connectionFactory);
+            _appSettingsService = new AppSettingsService(_appSettingsRepo);
 
-        // 3. Casos de Uso
-        _getSnippetsUseCase = new GetSnippetsUseCase(_snippetRepo);
-        _createSnippetUseCase = new CreateSnippetUseCase(_snippetRepo, _folderRepo);
-        _updateSnippetUseCase = new UpdateSnippetUseCase(_snippetRepo, _folderRepo);
-        _deleteSnippetUseCase = new DeleteSnippetToTrashUseCase(_snippetRepo);
-        _restoreSnippetUseCase = new RestoreSnippetUseCase(_snippetRepo);
-        _purgeTrashUseCase = new PurgeTrashUseCase(_snippetRepo);
-        _duplicateSnippetUseCase = new DuplicateSnippetUseCase(_snippetRepo);
-        _toggleSnippetUseCase = new ToggleSnippetStateUseCase(_snippetRepo);
+            // 3. Casos de Uso
+            _getSnippetsUseCase = new GetSnippetsUseCase(_snippetRepo);
+            _createSnippetUseCase = new CreateSnippetUseCase(_snippetRepo, _folderRepo);
+            _updateSnippetUseCase = new UpdateSnippetUseCase(_snippetRepo, _folderRepo);
+            _deleteSnippetUseCase = new DeleteSnippetToTrashUseCase(_snippetRepo);
+            _restoreSnippetUseCase = new RestoreSnippetUseCase(_snippetRepo);
+            _purgeTrashUseCase = new PurgeTrashUseCase(_snippetRepo);
+            _duplicateSnippetUseCase = new DuplicateSnippetUseCase(_snippetRepo);
+            _toggleSnippetUseCase = new ToggleSnippetStateUseCase(_snippetRepo);
 
-        _getFoldersUseCase = new GetFoldersUseCase(_folderRepo);
-        _createFolderUseCase = new CreateFolderUseCase(_folderRepo);
-        _updateFolderUseCase = new UpdateFolderUseCase(_folderRepo);
-        _deleteFolderUseCase = new DeleteFolderUseCase(_folderRepo);
+            _getFoldersUseCase = new GetFoldersUseCase(_folderRepo);
+            _createFolderUseCase = new CreateFolderUseCase(_folderRepo);
+            _updateFolderUseCase = new UpdateFolderUseCase(_folderRepo);
+            _deleteFolderUseCase = new DeleteFolderUseCase(_folderRepo);
 
-        _excludedAppsUseCase = new ManageExcludedApplicationsUseCase(_excludedAppsRepo);
-        _gitHubUpdateService = new GitHubUpdateService();
-        _checkForUpdatesUseCase = new CheckForUpdatesUseCase(_gitHubUpdateService);
+            _excludedAppsUseCase = new ManageExcludedApplicationsUseCase(_excludedAppsRepo);
+            _gitHubUpdateService = new GitHubUpdateService();
+            _checkForUpdatesUseCase = new CheckForUpdatesUseCase(_gitHubUpdateService);
 
-        // 4. Motor de Expansión y Variables
-        _variableResolutionService = new VariableResolutionService(_variableOptions);
-        _expansionEngine = new SnippetExpansionEngine(_snippetRepo, _variableResolutionService);
+            // 4. Motor de Expansión y Variables
+            _variableResolutionService = new VariableResolutionService(_variableOptions);
+            _expansionEngine = new SnippetExpansionEngine(_snippetRepo, _variableResolutionService);
 
-        // 5. Copias de Seguridad
-        var backupsDir = Path.Combine(appDataDir, "Backups");
-        _backupStorage = new DiskBackupStorage(backupsDir);
-        _backupProvider = new SqliteBackupProvider(_connectionFactory);
-        _backupService = new BackupService(_backupProvider, _backupStorage);
-
-        // 6. CSV Import / Export
-        _csvService = new CsvImportExportService(_snippetRepo, _folderRepo);
-
-        // 7. Sincronización
-        var syncDir = Path.Combine(appDataDir, "Sync");
-        _syncStorage = new DiskSyncStorage(syncDir);
-        _syncEngine = new SyncEngine(_snippetRepo, _folderRepo, _syncMetadataRepo, _syncStorage);
-        _syncWatcher = new FileWatcherSyncService(syncDir);
-        _syncWatcher.RemoteManifestChanged += async () => await _syncEngine.ProcessRemoteManifestAsync();
-        _syncWatcher.Start();
-
-        // 8. Servicios Win32
-        _win32 = NativeWin32Api.Instance;
-        _keyboardHook = new LowLevelKeyboardHook(_win32);
-        _textInjector = new WindowsTextInjector(_win32);
-        _sensitiveDetector = new SensitiveControlDetector();
-        _focusTracker = new FocusTracker(_win32);
-        _caretLocator = new WindowsCaretLocator(_win32);
-        _startupService = new WindowsStartupService();
-
-        _orchestrator = new KeyboardExpansionOrchestrator(
-            _keyboardHook,
-            _expansionEngine,
-            _textInjector,
-            _sensitiveDetector,
-            _focusTracker,
-            _excludedAppsRepo,
-            _win32);
-
-        // Suscripción al evento de solicitud de variables interactivas (RF-12)
-        _orchestrator.InteractiveInputRequested += OnInteractiveInputRequested;
-
-        // 9. Temas y Apariencia
-        _themeService = new ThemeService();
-        var settings = await _appSettingsService.GetSettingsAsync();
-        _variableOptions.DateFormat = settings.DefaultDateFormat;
-        _variableOptions.TimeFormat = settings.DefaultTimeFormat;
-        _themeService.ApplyTheme(settings.Theme);
-
-        // Registro de icono y tema nativo de ventana para cualquier ventana que se cargue
-        EventManager.RegisterClassHandler(
-            typeof(Window),
-            FrameworkElement.LoadedEvent,
-            new RoutedEventHandler((s, _) =>
+            // 5. Copias de Seguridad
+            var backupsDir = Path.Combine(appDataDir, "Backups");
+            _backupStorage = new DiskBackupStorage(backupsDir);
+            _backupProvider = new SqliteBackupProvider(_connectionFactory, () =>
             {
-                if (s is Window w)
+                _snippetRepo.InvalidateCache();
+                _excludedAppsRepo.InvalidateCache();
+            });
+            _backupService = new BackupService(_backupProvider, _backupStorage);
+
+            // 6. CSV Import / Export
+            _csvService = new CsvImportExportService(_snippetRepo, _folderRepo);
+
+            // 7. Sincronización
+            var syncDir = Path.Combine(appDataDir, "Sync");
+            _syncStorage = new DiskSyncStorage(syncDir);
+            _syncEngine = new SyncEngine(_snippetRepo, _folderRepo, _syncMetadataRepo, _syncStorage);
+            _syncWatcher = new FileWatcherSyncService(syncDir);
+            _syncWatcher.RemoteManifestChanged += async () => await _syncEngine.ProcessRemoteManifestAsync();
+            _syncWatcher.Start();
+
+            // 8. Servicios Win32
+            _win32 = NativeWin32Api.Instance;
+            _keyboardHook = new LowLevelKeyboardHook(_win32);
+            _textInjector = new WindowsTextInjector(_win32);
+            _sensitiveDetector = new SensitiveControlDetector();
+            _focusTracker = new FocusTracker(_win32);
+            _caretLocator = new WindowsCaretLocator(_win32);
+            _startupService = new WindowsStartupService();
+
+            _orchestrator = new KeyboardExpansionOrchestrator(
+                _keyboardHook,
+                _expansionEngine,
+                _textInjector,
+                _sensitiveDetector,
+                _focusTracker,
+                _excludedAppsRepo,
+                _win32);
+
+            // Suscripción al evento de solicitud de variables interactivas (RF-12)
+            _orchestrator.InteractiveInputRequested += OnInteractiveInputRequested;
+
+            // 9. Temas y Apariencia
+            _themeService = new ThemeService();
+            var settings = await _appSettingsService.GetSettingsAsync();
+            _variableOptions.DateFormat = settings.DefaultDateFormat;
+            _variableOptions.TimeFormat = settings.DefaultTimeFormat;
+            _themeService.ApplyTheme(settings.Theme);
+
+            // Registro de icono cacheado y tema nativo de ventana para cualquier ventana que se cargue
+            EventManager.RegisterClassHandler(
+                typeof(Window),
+                FrameworkElement.LoadedEvent,
+                new RoutedEventHandler((s, _) =>
                 {
-                    if (w.Icon == null)
+                    if (s is Window w)
                     {
-                        try
+                        if (w.Icon == null)
                         {
-                            w.Icon = System.Windows.Media.Imaging.BitmapFrame.Create(
-                                new Uri("pack://application:,,,/Assets/app.ico", UriKind.Absolute));
+                            try
+                            {
+                                if (_cachedAppIcon == null)
+                                {
+                                    var frame = System.Windows.Media.Imaging.BitmapFrame.Create(
+                                        new Uri("pack://application:,,,/Assets/app.ico", UriKind.Absolute));
+                                    if (frame.CanFreeze)
+                                    {
+                                        frame.Freeze();
+                                    }
+                                    _cachedAppIcon = frame;
+                                }
+                                w.Icon = _cachedAppIcon;
+                            }
+                            catch
+                            {
+                                // Fallback silencioso si no se localiza el recurso
+                            }
                         }
-                        catch
+
+                        if (_themeService != null)
                         {
-                            // Fallback silencioso si no se localiza el recurso
+                            Common.WindowThemeHelper.ApplyDarkTitleBar(w, _themeService.IsDarkActive);
                         }
                     }
+                }));
 
-                    if (_themeService != null)
-                    {
-                        Common.WindowThemeHelper.ApplyDarkTitleBar(w, _themeService.IsDarkActive);
-                    }
-                }
-            }));
+            // 10. Bandeja del Sistema (System Tray)
+            _trayIconService = new TrayIconService(
+                _orchestrator,
+                openMainWindow: OpenMainWindow,
+                openSettings: OpenSettingsDialog,
+                syncNow: async () => await _syncEngine.ProcessRemoteManifestAsync(),
+                exitApplication: ExitApplication);
+            _trayIconService.Initialize();
 
-        // 10. Bandeja del Sistema (System Tray)
-        _trayIconService = new TrayIconService(
-            _orchestrator,
-            openMainWindow: OpenMainWindow,
-            openSettings: OpenSettingsDialog,
-            syncNow: async () => await _syncEngine.ProcessRemoteManifestAsync(),
-            exitApplication: ExitApplication);
-        _trayIconService.Initialize();
+            // 11. Sembrado inicial de bienvenida si la biblioteca está vacía
+            var existingSnippets = await _snippetRepo.GetAllActiveAsync();
+            if (!existingSnippets.Any())
+            {
+                var generalFolder = AtajaMe.Domain.Entities.Folder.Create("General");
+                await _folderRepo.AddAsync(generalFolder);
 
-        // 11. Ventana Principal y ViewModel
-        _mainViewModel = new MainViewModel(
-            _getSnippetsUseCase,
-            _createSnippetUseCase,
-            _updateSnippetUseCase,
-            _deleteSnippetUseCase,
-            _restoreSnippetUseCase,
-            _purgeTrashUseCase,
-            _duplicateSnippetUseCase,
-            _toggleSnippetUseCase,
-            _getFoldersUseCase,
-            _createFolderUseCase,
-            _updateFolderUseCase,
-            _deleteFolderUseCase,
-            _csvService,
-            _orchestrator);
+                var welcomeSnippet = AtajaMe.Domain.Entities.Snippet.Create(
+                    ":hola",
+                    "Bienvenida a AtajaMe",
+                    "¡Hola! Te damos la bienvenida a AtajaMe. Hoy es {fecha} y son las {hora}.",
+                    generalFolder.Id);
 
-        _mainViewModel.RequestExportCsv += HandleExportCsv;
-        _mainViewModel.RequestImportCsv += HandleImportCsv;
+                var interactiveSnippet = AtajaMe.Domain.Entities.Snippet.Create(
+                    ":saludo",
+                    "Saludo Interactivo",
+                    "Hola {nombre}, un gusto saludarte. Hoy es {fecha}.",
+                    generalFolder.Id);
 
-        _mainWindow = new MainWindow(_mainViewModel);
-        MainWindow = _mainWindow;
-        Common.WindowThemeHelper.ApplyDarkTitleBar(_mainWindow, _themeService.IsDarkActive);
+                await _snippetRepo.AddAsync(welcomeSnippet);
+                await _snippetRepo.AddAsync(interactiveSnippet);
+            }
 
-        // 12. Iniciar orquestador de teclado
-        await _orchestrator.StartAsync();
+            // 12. Iniciar orquestador de teclado
+            await _orchestrator.StartAsync();
 
-        // Sembrado inicial de bienvenida si la biblioteca está vacía
-        var existingSnippets = await _snippetRepo.GetAllActiveAsync();
-        if (!existingSnippets.Any())
-        {
-            var generalFolder = AtajaMe.Domain.Entities.Folder.Create("General");
-            await _folderRepo.AddAsync(generalFolder);
+            // 13. Mostrar ventana salvo que se indique arranque en segundo plano / minimizado
+            bool startMinimized = settings.StartMinimized ||
+                                  e.Args.Any(a => a.Equals("--minimized", StringComparison.OrdinalIgnoreCase) ||
+                                                  a.Equals("/background", StringComparison.OrdinalIgnoreCase));
 
-            var welcomeSnippet = AtajaMe.Domain.Entities.Snippet.Create(
-                ":hola",
-                "Bienvenida a AtajaMe",
-                "¡Hola! Te damos la bienvenida a AtajaMe. Hoy es {fecha} y son las {hora}.",
-                generalFolder.Id);
+            if (!startMinimized)
+            {
+                OpenMainWindow();
+            }
+            else
+            {
+                ReclaimMemory();
+            }
 
-            var interactiveSnippet = AtajaMe.Domain.Entities.Snippet.Create(
-                ":saludo",
-                "Saludo Interactivo",
-                "Hola {nombre}, un gusto saludarte. Hoy es {fecha}.",
-                generalFolder.Id);
+            // Comprobación de actualizaciones en segundo plano sin bloquear el arranque (si está activado)
+            if (settings.CheckUpdatesOnStartup)
+            {
+                _ = CheckForUpdatesInBackgroundAsync();
+            }
 
-            await _snippetRepo.AddAsync(welcomeSnippet);
-            await _snippetRepo.AddAsync(interactiveSnippet);
-
-            await _mainViewModel.LoadDataAsync();
+            // Ciclo de vida persistente en segundo plano (RF-34, RF-35)
+            ShutdownMode = ShutdownMode.OnExplicitShutdown;
         }
-
-        // 13. Mostrar ventana salvo que se indique arranque en segundo plano / minimizado
-        bool startMinimized = settings.StartMinimized ||
-                              e.Args.Any(a => a.Equals("--minimized", StringComparison.OrdinalIgnoreCase) ||
-                                              a.Equals("/background", StringComparison.OrdinalIgnoreCase));
-
-        if (!startMinimized)
+        catch (Exception ex)
         {
-            _mainWindow.Show();
-        }
+            try
+            {
+                var appData = System.IO.Path.Combine(
+                    Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+                    "AtajaMe");
+                System.IO.Directory.CreateDirectory(appData);
+                var logPath = System.IO.Path.Combine(appData, "startup_error.log");
+                System.IO.File.WriteAllText(logPath, ex.ToString());
+            }
+            catch { }
 
-        // Comprobación de actualizaciones en segundo plano sin bloquear el arranque (si está activado)
-        if (settings.CheckUpdatesOnStartup)
-        {
-            _ = CheckForUpdatesInBackgroundAsync();
-        }
+            System.Windows.MessageBox.Show(
+                $"Ocurrió un error al iniciar AtajaMe:\n\n{ex.Message}\n\nDetalles:\n{ex.StackTrace}",
+                "Error en AtajaMe",
+                System.Windows.MessageBoxButton.OK,
+                System.Windows.MessageBoxImage.Error);
 
-        // Ciclo de vida persistente en segundo plano (RF-34, RF-35)
-        ShutdownMode = ShutdownMode.OnExplicitShutdown;
+            Shutdown(1);
+        }
     }
-    catch (Exception ex)
-    {
-        try
-        {
-            var appData = System.IO.Path.Combine(
-                Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-                "AtajaMe");
-            System.IO.Directory.CreateDirectory(appData);
-            var logPath = System.IO.Path.Combine(appData, "startup_error.log");
-            System.IO.File.WriteAllText(logPath, ex.ToString());
-        }
-        catch { }
-
-        System.Windows.MessageBox.Show(
-            $"Ocurrió un error al iniciar AtajaMe:\n\n{ex.Message}\n\nDetalles:\n{ex.StackTrace}",
-            "Error en AtajaMe",
-            System.Windows.MessageBoxButton.OK,
-            System.Windows.MessageBoxImage.Error);
-
-        Shutdown(1);
-    }
-}
 
     private void OnInteractiveInputRequested(object? sender, InteractiveInputRequestedEventArgs e)
     {
@@ -367,11 +362,56 @@ public partial class App : System.Windows.Application
                 var values = vm.GetValues();
                 await _orchestrator.CompleteInteractiveExpansionAsync(e.Result, values, e.WindowHandle);
             }
+
+            if (_mainWindow == null)
+            {
+                ReclaimMemory();
+            }
         });
     }
 
     public void OpenMainWindow()
     {
+        if (_mainWindow == null)
+        {
+            _mainViewModel = new MainViewModel(
+                _getSnippetsUseCase,
+                _createSnippetUseCase,
+                _updateSnippetUseCase,
+                _deleteSnippetUseCase,
+                _restoreSnippetUseCase,
+                _purgeTrashUseCase,
+                _duplicateSnippetUseCase,
+                _toggleSnippetUseCase,
+                _getFoldersUseCase,
+                _createFolderUseCase,
+                _updateFolderUseCase,
+                _deleteFolderUseCase,
+                _csvService,
+                _orchestrator);
+
+            _mainViewModel.RequestExportCsv += HandleExportCsv;
+            _mainViewModel.RequestImportCsv += HandleImportCsv;
+
+            _mainWindow = new MainWindow(_mainViewModel);
+            MainWindow = _mainWindow;
+            Common.WindowThemeHelper.ApplyDarkTitleBar(_mainWindow, _themeService.IsDarkActive);
+
+            _mainWindow.Closed += (_, _) =>
+            {
+                if (_mainViewModel != null)
+                {
+                    _mainViewModel.RequestExportCsv -= HandleExportCsv;
+                    _mainViewModel.RequestImportCsv -= HandleImportCsv;
+                    _mainViewModel = null;
+                }
+
+                _mainWindow = null;
+                MainWindow = null;
+                ReclaimMemory();
+            };
+        }
+
         if (_mainWindow.WindowState == WindowState.Minimized)
         {
             _mainWindow.WindowState = WindowState.Normal;
@@ -397,9 +437,14 @@ public partial class App : System.Windows.Application
 
         var dialog = new SettingsDialog(vm)
         {
-            Owner = _mainWindow.IsVisible ? _mainWindow : null
+            Owner = _mainWindow?.IsVisible == true ? _mainWindow : null
         };
         dialog.ShowDialog();
+
+        if (_mainWindow == null)
+        {
+            ReclaimMemory();
+        }
     }
 
     private async Task CheckForUpdatesInBackgroundAsync()
@@ -418,7 +463,7 @@ public partial class App : System.Windows.Application
                 {
                     var dialog = new UpdateAvailableDialog(update, _gitHubUpdateService)
                     {
-                        Owner = _mainWindow.IsVisible ? _mainWindow : null
+                        Owner = _mainWindow?.IsVisible == true ? _mainWindow : null
                     };
                     dialog.ShowDialog();
                 });
@@ -435,13 +480,18 @@ public partial class App : System.Windows.Application
         var vm = new ConflictResolutionViewModel(_syncEngine);
         var dialog = new ConflictResolutionDialog(vm)
         {
-            Owner = owner ?? (_mainWindow.IsVisible ? _mainWindow : null)
+            Owner = owner ?? (_mainWindow?.IsVisible == true ? _mainWindow : null)
         };
         dialog.ShowDialog();
     }
 
     private async void HandleExportCsv()
     {
+        if (_mainWindow == null || _mainViewModel == null)
+        {
+            return;
+        }
+
         var sfd = new Microsoft.Win32.SaveFileDialog
         {
             Filter = "Archivos CSV (*.csv)|*.csv",
@@ -479,6 +529,11 @@ public partial class App : System.Windows.Application
 
     private async void HandleImportCsv()
     {
+        if (_mainWindow == null || _mainViewModel == null)
+        {
+            return;
+        }
+
         var ofd = new Microsoft.Win32.OpenFileDialog
         {
             Filter = "Archivos CSV (*.csv)|*.csv",
@@ -585,7 +640,7 @@ public partial class App : System.Windows.Application
             await _orchestrator.StopAsync();
             _syncWatcher.Dispose();
             _trayIconService.Dispose();
-            _mainWindow.ForceClose();
+            _mainWindow?.ForceClose();
         }
         catch
         {
@@ -596,4 +651,26 @@ public partial class App : System.Windows.Application
             Shutdown();
         }
     }
+
+    private static void ReclaimMemory()
+    {
+        try
+        {
+            Microsoft.Data.Sqlite.SqliteConnection.ClearAllPools();
+            System.Runtime.GCSettings.LargeObjectHeapCompactionMode = System.Runtime.GCLargeObjectHeapCompactionMode.CompactOnce;
+            GC.Collect(GC.MaxGeneration, GCCollectionMode.Aggressive, blocking: true, compacting: true);
+            GC.WaitForPendingFinalizers();
+            GC.Collect(GC.MaxGeneration, GCCollectionMode.Aggressive, blocking: true, compacting: true);
+
+            using var proc = System.Diagnostics.Process.GetCurrentProcess();
+            EmptyWorkingSet(proc.Handle);
+        }
+        catch
+        {
+            // Ignorar errores no críticos al compactar memoria
+        }
+    }
+
+    [System.Runtime.InteropServices.DllImport("psapi.dll")]
+    private static extern int EmptyWorkingSet(IntPtr hwProc);
 }

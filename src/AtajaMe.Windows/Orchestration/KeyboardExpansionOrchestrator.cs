@@ -22,6 +22,8 @@ public sealed class KeyboardExpansionOrchestrator : IKeyboardExpansionOrchestrat
     private readonly IWin32Api _win32;
 
     private readonly object _syncLock = new();
+    private readonly byte[] _keyboardState = new byte[256];
+    private readonly StringBuilder _charBuffer = new(4);
     private CancellationTokenSource? _cts;
     private Task? _consumerTask;
     private bool _disposed;
@@ -310,7 +312,8 @@ public sealed class KeyboardExpansionOrchestrator : IKeyboardExpansionOrchestrat
 
         try
         {
-            var keyboardState = new byte[256];
+            Array.Clear(_keyboardState, 0, _keyboardState.Length);
+            var keyboardState = _keyboardState;
             _win32.GetKeyboardState(keyboardState);
 
             // Sincronizar modificadores físicos globales en worker threads (Shift para ':', AltGr para '@', etc.)
@@ -367,7 +370,8 @@ public sealed class KeyboardExpansionOrchestrator : IKeyboardExpansionOrchestrat
                 keyboardState[Win32Constants.VK_CAPITAL] = 0x01;
             }
 
-            var sb = new StringBuilder(4);
+            var sb = _charBuffer;
+            sb.Clear();
             var hWnd = _focusTracker.GetActiveWindowHandle();
             uint threadId = hWnd != IntPtr.Zero ? _win32.GetWindowThreadProcessId(hWnd, out _) : 0;
             var hkl = _win32.GetKeyboardLayout(threadId);

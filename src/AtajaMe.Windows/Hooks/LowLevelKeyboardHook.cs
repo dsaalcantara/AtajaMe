@@ -29,6 +29,10 @@ public sealed class LowLevelKeyboardHook : IKeyboardHook
     private volatile bool _isLMenuDown;
     private volatile bool _isRMenuDown;
 
+    // Búferes reutilizables para evitar asignaciones de memoria en el callback del hook
+    private readonly byte[] _keyboardState = new byte[256];
+    private readonly StringBuilder _charBuffer = new(4);
+
     public ChannelReader<RawKeyEvent> KeyEvents => _channel.Reader;
     public bool IsRunning => _hookHandle != IntPtr.Zero;
 
@@ -183,7 +187,8 @@ public sealed class LowLevelKeyboardHook : IKeyboardHook
                 case Win32Constants.VK_SPACE: return ' ';
             }
 
-            var keyboardState = new byte[256];
+            Array.Clear(_keyboardState, 0, _keyboardState.Length);
+            var keyboardState = _keyboardState;
             _win32.GetKeyboardState(keyboardState);
 
             bool isShift = _isLShiftDown || _isRShiftDown || ((_win32.GetAsyncKeyState(Win32Constants.VK_SHIFT) & 0x8000) != 0);
@@ -235,7 +240,8 @@ public sealed class LowLevelKeyboardHook : IKeyboardHook
                 keyboardState[Win32Constants.VK_CAPITAL] = 0x01;
             }
 
-            var sb = new StringBuilder(4);
+            var sb = _charBuffer;
+            sb.Clear();
             var hWnd = _win32.GetForegroundWindow();
             uint threadId = hWnd != IntPtr.Zero ? _win32.GetWindowThreadProcessId(hWnd, out _) : 0;
             var hkl = _win32.GetKeyboardLayout(threadId);
