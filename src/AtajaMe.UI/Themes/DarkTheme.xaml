@@ -26,4 +26,8 @@
     <SolidColorBrush x:Key="WarningBrush" Color="#F59E0B" />
     <SolidColorBrush x:Key="SuccessBrush" Color="#22C55E" />
 
+    <SolidColorBrush x:Key="ScrollBarTrackBrush" Color="Transparent" />
+    <SolidColorBrush x:Key="ScrollBarThumbBrush" Color="#3F3F46" />
+    <SolidColorBrush x:Key="ScrollBarThumbHoverBrush" Color="#52525B" />
+
 </ResourceDictionary>
